@@ -1,0 +1,107 @@
+{
+  "projectType": "saas",
+  "projectName": "Dayflow",
+  "projectDescription": "A private, automatic timeline generator that tracks your screen activity and creates AI-powered summaries of your day",
+  "theme": "almond",
+  "primaryColor": "#5B8FF9",
+  "lightColor": "#E8F4FD",
+  "darkColor": "#2E5A8E",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/timeline",
+              "features/ai-providers",
+              "features/journal",
+              "features/timelapse",
+              "features/export"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/ai-setup",
+              "configuration/gemini",
+              "configuration/local-models",
+              "configuration/chatgpt-claude",
+              "configuration/storage",
+              "configuration/automation"
+            ]
+          },
+          {
+            "group": "Privacy & Security",
+            "pages": [
+              "privacy/overview",
+              "privacy/data-storage",
+              "privacy/ai-providers"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/url-scheme",
+              "advanced/debugging",
+              "advanced/building-from-source"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Development",
+        "groups": [
+          {
+            "group": "Architecture",
+            "pages": [
+              "development/overview",
+              "development/project-structure",
+              "development/ai-pipeline"
+            ]
+          },
+          {
+            "group": "Contributing",
+            "pages": [
+              "development/setup",
+              "development/building",
+              "development/contributing"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Automatic screen recording and timeline generation",
+    "AI-powered activity summaries with multiple provider support (Gemini, Local, ChatGPT, Claude)",
+    "Daily journal with intentions and reflections",
+    "Timeline timelapse playback",
+    "Privacy-first local data storage",
+    "Context-aware tracking beyond simple app usage",
+    "Markdown timeline export",
+    "Automatic storage management",
+    "URL scheme automation support",
+    "Battery-efficient screen capture"
+  ],
+  "publicApiSurface": [
+    "dayflow://start-recording - Start screen recording",
+    "dayflow://stop-recording - Stop screen recording",
+    "LLMService - Core AI processing service",
+    "ScreenRecorder - Screen capture management",
+    "StorageManager - Local data management",
+    "ActivityCardData - Timeline card model",
+    "JournalCoordinator - Journal feature coordinator",
+    "ChatService - AI chat interface",
+    "CategoryStore - Activity categorization"
+  ]
+}
