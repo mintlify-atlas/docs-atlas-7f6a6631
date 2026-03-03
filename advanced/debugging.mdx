@@ -1,0 +1,416 @@
+---
+title: 'Debugging & Developer Tools'
+description: 'Access recordings, inspect batches, view logs, and troubleshoot common issues'
+---
+
+## Accessing Debug Tools
+
+Dayflow provides built-in debugging features accessible from the menu bar icon and filesystem.
+
+## Saved Recordings
+
+### Opening the Recordings Folder
+
+Click the **Dayflow icon in the menu bar** → **Open Recordings** to view all captured content.
+
+From `StatusMenuView.swift:70-75`:
+
+```swift
+private func openRecordingsFolder() {
+    performAfterMenuDismiss {
+        let directory = StorageManager.shared.recordingsRoot
+        NSWorkspace.shared.open(directory)
+    }
+}
+```
+
+### Recording Storage Location
+
+All recordings are stored in:
+
+```bash
+~/Library/Application Support/Dayflow/recordings/
+```
+
+This directory contains:
+
+- **Video chunks** (`.mp4` files) - Screen recordings captured in 60-second segments
+- **Screenshots** (`.jpg` files) - Periodic screen captures (newer capture method)
+- **Timelapse videos** - Generated summaries for timeline cards
+
+### File Naming Convention
+
+Files are named with timestamp format:
+
+```
+yyyyMMdd_HHmmssSSS.mp4
+yyyyMMdd_HHmmssSSS.jpg
+```
+
+Example: `20260303_143052847.mp4` = captured on March 3, 2026 at 2:30:52.847 PM
+
+## Database Location
+
+Dayflow uses SQLite for metadata storage:
+
+```bash
+~/Library/Application Support/Dayflow/chunks.sqlite
+```
+
+Database schema includes:
+
+- `chunks` - Video recording segments
+- `screenshots` - Screen captures with timestamps
+- `analysis_batches` - Groupings sent to AI for processing
+- `timeline_cards` - Generated activity summaries
+- `observations` - AI transcription outputs
+- `llm_calls` - Detailed logs of all LLM API requests
+
+You can inspect the database with any SQLite browser or CLI:
+
+```bash
+sqlite3 ~/Library/Application\ Support/Dayflow/chunks.sqlite
+```
+
+## Viewing Batch Contents
+
+### What Are Batches?
+
+Batches group recording chunks for AI processing. Each batch represents a time window analyzed together to generate timeline cards.
+
+From `StorageManager.swift:656-674`, batches track:
+
+- Start/end timestamps
+- Processing status (`pending`, `processing`, `completed`, `failed`)
+- Associated chunks or screenshots
+- LLM metadata (API calls, latency, errors)
+
+### Debug Log Export
+
+Dayflow can generate detailed debug logs with batch, LLM, and timeline data. The `DebugLogFormatter.swift` utility formats:
+
+**Timeline cards**:
+```
+--- Timeline cards (latest 50) ---
+1. [2026-03-03] 2:30 PM-3:45 PM | Writing documentation | Work / Development | created 2026-03-03 14:30:00
+   Summary: Drafted advanced debugging documentation for Dayflow
+   Details: Created comprehensive guide covering recordings access, batch inspection, and troubleshooting
+```
+
+**LLM calls**:
+```
+--- LLM calls (latest 50) ---  
+1. 2026-03-03 14:35:12 | gemini | gemini-2.0-flash-exp | generate_cards | success | 1847ms | HTTP 200
+   batch 42, group abc123, attempt 1
+   POST https://generativelanguage.googleapis.com/v1beta/...
+```
+
+**Analysis batches**:
+```
+--- Analysis batches (latest 50) ---
+1. id=42 | status=completed | created 2026-03-03 14:30:00
+   window: 2026-03-03 14:00:00 → 2026-03-03 14:30:00
+   reason: scheduled_interval
+```
+
+Access this via internal debug views (implementation may vary by version).
+
+## Logs and Console Output
+
+### Application Logs
+
+Dayflow logs to the unified logging system. View logs in real-time:
+
+```bash
+log stream --predicate 'processImagePath contains "Dayflow"' --level debug
+```
+
+### Filtering by Category
+
+Dayflow uses category prefixes for different subsystems:
+
+```bash
+# Deep-link events
+log stream --predicate 'processImagePath contains "Dayflow"' | grep DeepLink
+
+# Database operations  
+log stream --predicate 'processImagePath contains "Dayflow"' | grep "DB write"
+
+# Slow queries (>100ms)
+log stream --predicate 'processImagePath contains "Dayflow"' | grep "SLOW"
+```
+
+### Crash Reports
+
+Crash logs are stored in:
+
+```bash
+~/Library/Logs/DiagnosticReports/Dayflow_*.crash
+```
+
+If Dayflow crashes, check this directory for stack traces.
+
+## Troubleshooting Common Issues
+
+### Blank Screen Capture
+
+**Symptom**: Timeline shows blank or black frames
+
+**Causes**:
+1. Screen Recording permission not granted
+2. Permission granted but app not restarted
+3. Recording during screen lock/screensaver
+
+**Solutions**:
+
+<Steps>
+  <Step title="Verify Screen Recording permission">
+    Go to **System Settings → Privacy & Security → Screen & System Audio Recording**
+    
+    Ensure **Dayflow** is enabled.
+  </Step>
+  
+  <Step title="Restart Dayflow after granting permission">
+    Quit Dayflow completely from the menu bar → **Quit Completely**
+    
+    Relaunch from Applications folder.
+    
+    From `ScreenRecordingPermissionView.swift:183-189`, permissions require a full restart:
+    
+    ```swift
+    if CGPreflightScreenCaptureAccess() {
+        permissionState = .granted
+        Task { @MainActor in AppDelegate.allowTermination = false }
+    }
+    ```
+  </Step>
+  
+  <Step title="Check for screen lock conflicts">
+    Screen capture may fail during lock. Review timeline for gaps during known lock periods.
+  </Step>
+  
+  <Step title="Inspect recordings folder">
+    Open recordings folder from menu bar → verify files have non-zero size:
+    
+    ```bash
+    ls -lh ~/Library/Application\ Support/Dayflow/recordings/
+    ```
+    
+    Files under 1KB indicate capture failures.
+  </Step>
+</Steps>
+
+### API Errors (Gemini/ChatGPT/Claude)
+
+**Symptom**: Timeline stops generating, batches stuck in "processing"
+
+**Causes**:
+1. Invalid or expired API key
+2. Network connectivity issues
+3. API quota exceeded
+4. Rate limiting
+
+**Solutions**:
+
+<Steps>
+  <Step title="Verify API key configuration">
+    Go to **Dayflow Settings → AI Provider**
+    
+    Re-enter your API key if using Gemini.
+    
+    For ChatGPT/Claude CLI: ensure you're logged in:
+    ```bash
+    # ChatGPT Codex CLI
+    codex auth status
+    
+    # Claude Code
+    claude auth status
+    ```
+  </Step>
+  
+  <Step title="Check network connectivity">
+    Verify internet connection and firewall settings.
+    
+    Test API access directly:
+    ```bash
+    curl -H "x-goog-api-key: YOUR_KEY" \
+      https://generativelanguage.googleapis.com/v1beta/models
+    ```
+  </Step>
+  
+  <Step title="Review LLM call logs">
+    Check Console.app for HTTP errors:
+    ```bash
+    log stream --predicate 'processImagePath contains "Dayflow"' | grep "HTTP"
+    ```
+    
+    Look for 401 (auth), 429 (rate limit), or 500 (server error) responses.
+  </Step>
+  
+  <Step title="Inspect database for failed batches">
+    ```bash
+    sqlite3 ~/Library/Application\ Support/Dayflow/chunks.sqlite \
+      "SELECT id, status, reason FROM analysis_batches WHERE status='failed' ORDER BY id DESC LIMIT 10;"
+    ```
+    
+    The `reason` column may contain error details.
+  </Step>
+</Steps>
+
+### Permission Issues After macOS Update
+
+**Symptom**: Dayflow stops capturing after a macOS update
+
+**Solution**:
+
+<Steps>
+  <Step title="Re-grant Screen Recording permission">
+    macOS updates sometimes reset TCC (Transparency, Consent, and Control) permissions.
+    
+    Go to **System Settings → Privacy & Security → Screen & System Audio Recording**
+    
+    Toggle Dayflow **off** then **on**.
+  </Step>
+  
+  <Step title="Restart Dayflow completely">
+    **Menu bar → Quit Completely** (don't just hide the window)
+    
+    Launch from Applications folder.
+  </Step>
+  
+  <Step title="If issue persists, reset TCC database (advanced)">
+    ```bash
+    tccutil reset ScreenCapture com.teleportlabs.Dayflow
+    ```
+    
+    Then re-grant permission in System Settings and restart.
+  </Step>
+</Steps>
+
+### High CPU or Memory Usage
+
+**Symptom**: Dayflow using excessive resources
+
+**Diagnostics**:
+
+```bash
+# Check current resource usage
+top -pid $(pgrep Dayflow)
+
+# Sample for 10 seconds to identify hot code paths
+sample Dayflow 10 -f ~/Desktop/dayflow_sample.txt
+```
+
+**Common causes**:
+
+1. **Large batch processing**: CPU spikes during AI analysis are normal
+2. **Database contention**: Check for slow queries in logs
+3. **Storage cleanup running**: Hourly purge may briefly increase I/O
+
+**Solutions**:
+
+- Reduce recording quality in settings (if available)
+- Increase storage limit to reduce purge frequency
+- For local AI: ensure model is fully loaded in VRAM (check Ollama/LM Studio logs)
+
+### Missing Timeline Cards
+
+**Symptom**: Recordings exist but timeline is empty
+
+**Diagnostics**:
+
+```bash
+# Check for completed but unprocessed chunks
+sqlite3 ~/Library/Application\ Support/Dayflow/chunks.sqlite \
+  "SELECT COUNT(*) FROM chunks WHERE status='completed' AND id NOT IN (SELECT chunk_id FROM batch_chunks);"
+
+# Check for pending batches
+sqlite3 ~/Library/Application\ Support/Dayflow/chunks.sqlite \
+  "SELECT COUNT(*) FROM analysis_batches WHERE status='pending';"
+```
+
+If unprocessed chunks exist but no pending batches, the batch scheduler may have stalled.
+
+**Solution**: Restart Dayflow to resume batch processing.
+
+## Debug Build Features
+
+When building from source with `DEBUG` configuration, additional logging is enabled:
+
+From `StorageManager.swift:493-501`:
+
+```swift
+#if DEBUG
+try? db.write { db in
+    db.trace { event in
+        if case .profile(let statement, let duration) = event, duration > 0.1 {
+            print("📊 SLOW SQL (\(Int(duration * 1000))ms): \(statement)")
+        }
+    }
+}
+#endif
+```
+
+This logs all SQL queries taking >100ms to Console.app.
+
+## Advanced: Inspecting SQLite Database
+
+### Useful Queries
+
+**Recent timeline cards**:
+```sql
+SELECT day, start, end, title, category 
+FROM timeline_cards 
+WHERE is_deleted = 0 
+ORDER BY start_ts DESC 
+LIMIT 20;
+```
+
+**LLM call statistics**:
+```sql
+SELECT provider, operation, status, COUNT(*) as count, AVG(latency_ms) as avg_ms
+FROM llm_calls
+GROUP BY provider, operation, status
+ORDER BY count DESC;
+```
+
+**Storage usage by day**:
+```sql
+SELECT day, COUNT(*) as card_count, SUM(end_ts - start_ts) as total_seconds
+FROM timeline_cards
+WHERE is_deleted = 0
+GROUP BY day
+ORDER BY day DESC
+LIMIT 30;
+```
+
+### Backup Database
+
+Before manual edits, backup the database:
+
+```bash
+cp ~/Library/Application\ Support/Dayflow/chunks.sqlite \
+   ~/Desktop/dayflow_backup_$(date +%Y%m%d).sqlite
+```
+
+Dayflow also creates automatic backups in:
+
+```bash
+~/Library/Application Support/Dayflow/backups/
+```
+
+## Getting Help
+
+If troubleshooting doesn't resolve your issue:
+
+1. Check [GitHub Issues](https://github.com/JerryZLiu/Dayflow/issues) for similar problems
+2. Collect debug info:
+   - Console.app logs filtered for Dayflow
+   - Recent timeline cards and batch status from database
+   - System info: macOS version, Dayflow version (menu bar → About)
+3. Open a new issue with details
+
+## Related Documentation
+
+- [Building from Source](/advanced/building-from-source) - Build debug version for enhanced logging
+- [URL Scheme Automation](/advanced/url-scheme) - Automate recording for testing

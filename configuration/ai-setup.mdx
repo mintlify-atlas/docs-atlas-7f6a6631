@@ -1,0 +1,50 @@
+---
+title: 'AI Provider Setup'
+description: 'Choose and configure your AI provider for timeline analysis'
+---
+
+Dayflow supports three AI processing modes, each with different privacy, quality, and cost trade-offs.
+
+## Quick Comparison
+
+| Provider | Privacy | Quality | Cost | Speed | Requirements |
+|----------|---------|---------|------|-------|-------------|
+| **Gemini** | Cloud (BYO key) | Excellent | Pay-per-use | Fast (2 LLM calls) | API key |
+| **Local Models** | Fully private | Good | Free | Slower (33+ calls) | Ollama/LM Studio |
+| **ChatGPT/Claude** | Cloud | Best | Subscription | Medium (4-6 calls) | Paid subscription |
+
+## Processing Efficiency
+
+The number of LLM calls affects both speed and cost:
+
+- **Gemini**: 2 LLM calls per batch (video upload + transcribe → generate cards)
+- **ChatGPT/Claude**: 4-6 LLM calls per batch (extract frames → batch describe → merge → cards)
+- **Local Models**: 33+ LLM calls per batch (30 frame descriptions + merge + title + merge check + merge cards)
+
+<Note>
+Gemini's native video understanding makes it the most efficient option. Local models require describing each frame individually, resulting in more API calls and slower processing.
+</Note>
+
+## Choose Your Provider
+
+Select the provider that best matches your needs:
+
+<CardGroup cols={3}>
+  <Card title="Gemini" icon="google" href="/configuration/gemini">
+    Fast cloud processing with bring-your-own API key
+  </Card>
+  <Card title="Local Models" icon="server" href="/configuration/local-models">
+    Complete privacy with on-device processing
+  </Card>
+  <Card title="ChatGPT/Claude" icon="brain" href="/configuration/chatgpt-claude">
+    Premium quality with frontier reasoning models
+  </Card>
+</CardGroup>
+
+## Configuration Location
+
+All AI provider settings are configured in:
+
+**Dayflow → Settings → AI Provider**
+
+You can switch providers at any time. Existing timeline data remains unchanged.

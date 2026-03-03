@@ -1,0 +1,324 @@
+---
+title: Building & Debugging
+description: Build Dayflow in Xcode, configure environment variables, and debug effectively
+---
+
+Learn how to build, run, and debug Dayflow in your local development environment.
+
+## Building in Xcode
+
+<Steps>
+  <Step title="Select the Dayflow scheme">
+    In Xcode's toolbar, ensure the **Dayflow** scheme is selected with **My Mac** as the destination.
+  </Step>
+
+  <Step title="Build the project">
+    Build the app using one of these methods:
+    
+    - Press `Cmd + B`
+    - Select **Product → Build** from the menu
+    - Click the Play button (▶) to build and run
+  </Step>
+
+  <Step title="Run the app">
+    Press `Cmd + R` or click the Play button to build and launch Dayflow.
+    
+    <Info>
+    On first launch, macOS will prompt you to grant **Screen & System Audio Recording** permissions. Go to **System Settings → Privacy & Security → Screen & System Audio Recording** and enable Dayflow.
+    </Info>
+  </Step>
+</Steps>
+
+## Configuring the Run Scheme
+
+Dayflow requires environment variables for AI provider integration. Here's how to configure them:
+
+<Steps>
+  <Step title="Open scheme editor">
+    In Xcode, go to **Product → Scheme → Edit Scheme...** (or press `Cmd + <`).
+  </Step>
+
+  <Step title="Add environment variables">
+    1. Select **Run** in the left sidebar
+    2. Click the **Arguments** tab
+    3. Expand the **Environment Variables** section
+    4. Click the **+** button to add variables
+  </Step>
+
+  <Step title="Configure AI provider">
+    Add the following environment variables based on your AI provider:
+    
+    ### Gemini (Google AI)
+    
+    | Variable | Value | Description |
+    |----------|-------|-------------|
+    | `GEMINI_API_KEY` | Your API key | Get from [Google AI Studio](https://ai.google.dev/gemini-api/docs/api-key) |
+    
+    ### Local Models (Ollama/LM Studio)
+    
+    No environment variables required. Ensure Ollama or LM Studio is running locally.
+    
+    ### ChatGPT/Claude (CLI-based)
+    
+    No environment variables required. Install and authenticate the CLI tools:
+    - **ChatGPT**: Install [Codex CLI](https://github.com/openai/codex) and sign in
+    - **Claude**: Install [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and sign in
+  </Step>
+</Steps>
+
+<Tip>
+Environment variables set in the scheme editor only affect debug builds in Xcode. For release builds, see [Build Automation](#build-automation).
+</Tip>
+
+## Debugging Tips
+
+### Using Xcode Debugger
+
+1. **Set breakpoints** - Click the line number gutter to add breakpoints
+2. **Inspect variables** - Hover over variables or use the Variables View when paused
+3. **Debug console** - Use `po` (print object) command to inspect objects
+   ```swift
+   po someVariable
+   ```
+4. **View hierarchy** - Click the Debug View Hierarchy button during runtime to inspect UI
+
+### Debug Menu in Dayflow
+
+Dayflow includes built-in developer tools accessible from the menu bar:
+
+- **View recordings** - Click the Dayflow menu bar icon and select "Open Recordings..." to inspect captured video chunks
+- **Debug UI** - The app includes debug views for analyzing the capture and analysis pipeline
+- **Database inspection** - Local database is stored at `~/Library/Application Support/Dayflow/chunks.sqlite`
+
+<Info>
+Recording files are saved to `~/Library/Application Support/Dayflow/recordings/`
+</Info>
+
+### Console Logging
+
+View system logs for Dayflow:
+
+```bash
+# View live logs
+log stream --predicate 'subsystem == "com.teleportlabs.Dayflow"' --level debug
+
+# Or use Console.app and filter by "Dayflow"
+```
+
+## Common Build Issues
+
+<AccordionGroup>
+  <Accordion title="Code signing errors">
+    **Problem**: "Signing for 'Dayflow' requires a development team."
+    
+    **Solution**:
+    1. Select the Dayflow target in Xcode
+    2. Go to **Signing & Capabilities** tab
+    3. Check **Automatically manage signing**
+    4. Select your Apple ID team from the dropdown
+  </Accordion>
+
+  <Accordion title="Missing permissions at runtime">
+    **Problem**: App launches but screen capture is blank.
+    
+    **Solution**:
+    1. Open **System Settings → Privacy & Security → Screen & System Audio Recording**
+    2. Enable **Dayflow**
+    3. Restart the app
+    
+    See [Apple's documentation](https://support.apple.com/guide/mac-help/control-access-screen-system-audio-recording-mchld6aa7d23/mac) for details.
+  </Accordion>
+
+  <Accordion title="Build fails with 'Swift compiler error'">
+    **Problem**: Generic Swift compilation errors.
+    
+    **Solution**:
+    1. Clean build folder: **Product → Clean Build Folder** (`Cmd + Shift + K`)
+    2. Delete derived data: `rm -rf ~/Library/Developer/Xcode/DerivedData/Dayflow-*`
+    3. Restart Xcode and rebuild
+  </Accordion>
+
+  <Accordion title="Sparkle framework errors">
+    **Problem**: Missing or unsigned Sparkle framework.
+    
+    **Solution**:
+    Sparkle is included as a dependency. If you encounter issues:
+    1. Ensure you're using the latest commit from the repository
+    2. Clean and rebuild the project
+    3. Check that `Dayflow/Dayflow.xcodeproj` includes the Sparkle framework
+  </Accordion>
+</AccordionGroup>
+
+## Build Automation
+
+Dayflow includes powerful build automation scripts for creating release builds. These scripts handle building, code signing, notarization, and distribution.
+
+### Release Scripts Overview
+
+The `scripts/` directory contains automation for the entire release process:
+
+#### `release_dmg.sh`
+Builds, signs, notarizes, and packages a distribution-ready DMG.
+
+**What it does:**
+1. Builds Dayflow in Release configuration with code signing disabled
+2. Uploads dSYMs to Sentry for crash symbolication (if configured)
+3. Determines your Developer ID signing identity
+4. Creates a sanitized app copy without extended attributes
+5. Re-signs all frameworks (Sparkle, Sentry) and the app bundle with runtime hardening
+6. Creates a styled DMG with custom background using `create-dmg`
+7. Submits the DMG to Apple for notarization
+8. Staples the notarization ticket to the DMG
+
+**Key environment variables:**
+- `SIGN_ID` - Developer ID Application identity (auto-detected if not set)
+- `NOTARY_PROFILE` - Saved notarytool keychain profile
+- `NOTARY_APPLE_ID`, `NOTARY_TEAM_ID`, `NOTARY_APP_PASSWORD` - Alternative notarization credentials
+- `NO_NOTARIZE=1` - Skip notarization (for testing)
+
+**Usage:**
+```bash
+./scripts/release_dmg.sh
+```
+
+#### `release.sh`
+Complete one-button release workflow that orchestrates the entire release process.
+
+**What it does:**
+1. Bumps version number (minor by default; use `--major` or `--patch` to override)
+2. Updates `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in Xcode project
+3. Syncs `Info.plist` values
+4. Calls `release_dmg.sh` to build, sign, and notarize
+5. Signs the update with Sparkle's `sign_update` tool (EdDSA signature)
+6. Creates a draft GitHub Release and uploads the DMG
+7. Publishes the release (undrafts)
+8. Updates `docs/appcast.xml` with the new version for Sparkle auto-updates
+9. Commits changes and pushes to GitHub
+
+**Usage:**
+```bash
+# Bump minor version (e.g., 1.2.0 → 1.3.0)
+./scripts/release.sh
+
+# Bump major version (e.g., 1.2.0 → 2.0.0)
+./scripts/release.sh --major
+
+# Bump patch version (e.g., 1.2.0 → 1.2.1)
+./scripts/release.sh --patch
+
+# Dry run (shows what would happen)
+./scripts/release.sh --dry-run
+
+# Include custom release notes
+./scripts/release.sh --notes release-notes.md
+```
+
+**Requirements:**
+- Xcode + Developer ID certificate in login keychain
+- `sign_update` (Sparkle CLI) in PATH
+- `gh` CLI authenticated (`gh auth login`)
+- Sparkle private key in Keychain (generated by `generate_keys`)
+- `create-dmg` installed (`brew install create-dmg`)
+
+#### `update_appcast.sh`
+Prepends a new release item to the Sparkle appcast XML feed.
+
+**Usage:**
+```bash
+./scripts/update_appcast.sh \
+  --dmg Dayflow.dmg \
+  --url https://github.com/user/repo/releases/download/v1.2.3/Dayflow.dmg \
+  --short 1.2.3 \
+  --build 123 \
+  --signature <BASE64_EDDSA_SIG> \
+  --msv 13.0 \
+  --notes https://github.com/user/repo/releases/tag/v1.2.3 \
+  --out docs/appcast.xml
+```
+
+<Info>
+The appcast feed is used by Sparkle to notify users of updates. It's hosted at `https://dayflow.so/appcast.xml` via GitHub Pages.
+</Info>
+
+### Setting Up Release Automation
+
+To use the release scripts, you'll need to configure credentials:
+
+<Steps>
+  <Step title="Create release.env">
+    Copy the example configuration:
+    
+    ```bash
+    cp scripts/release.env.example scripts/release.env
+    ```
+  </Step>
+
+  <Step title="Configure credentials">
+    Edit `scripts/release.env` and add your credentials:
+    
+    ```bash
+    # Code signing
+    SIGN_ID="Developer ID Application: Your Name (TEAMID)"
+    
+    # Notarization (choose one method)
+    NOTARY_PROFILE="your-profile-name"  # Recommended: saved keychain profile
+    # OR
+    NOTARY_APPLE_ID="your@email.com"
+    NOTARY_TEAM_ID="TEAMID"
+    NOTARY_APP_PASSWORD="xxxx-xxxx-xxxx-xxxx"  # App-specific password
+    
+    # Optional: Crash reporting (Sentry)
+    SENTRY_AUTH_TOKEN="your-token"
+    SENTRY_ORG="your-org"
+    SENTRY_PROJECT="dayflow"
+    SENTRY_DSN="https://xxx@sentry.io/xxx"
+    
+    # Optional: Analytics (PostHog)
+    POSTHOG_API_KEY="phc_xxx"
+    POSTHOG_HOST="https://app.posthog.com"
+    ```
+    
+    <Tip>
+    Use `xcrun notarytool store-credentials` to save a keychain profile for easier notarization.
+    </Tip>
+  </Step>
+
+  <Step title="Install dependencies">
+    Install required tools:
+    
+    ```bash
+    # Install create-dmg for styled DMG creation
+    brew install create-dmg
+    
+    # Install Sparkle's sign_update tool
+    # Download from https://github.com/sparkle-project/Sparkle/releases
+    # Or build from source and add to PATH
+    
+    # Authenticate GitHub CLI
+    gh auth login
+    
+    # Optional: Install sentry-cli for crash reporting
+    brew install getsentry/tools/sentry-cli
+    ```
+  </Step>
+</Steps>
+
+<Warning>
+`scripts/release.env` contains sensitive credentials and is gitignored. Never commit this file to version control.
+</Warning>
+
+### Build Configuration Details
+
+The release scripts use these Xcode build settings:
+
+- **Scheme**: `Dayflow`
+- **Configuration**: `Release`
+- **Derived Data**: `build/` (local directory)
+- **Code Signing**: Disabled during build, applied manually afterward for proper Sparkle/Sentry framework signing
+- **Hardened Runtime**: Enabled with entitlements for Sparkle's XPC services
+
+## Next Steps
+
+- Review [Contributing Guidelines](/development/contributing) before submitting changes
+- Read the [README](https://github.com/JerryZLiu/Dayflow/blob/main/README.md) for architecture details
+- Join discussions on [GitHub Issues](https://github.com/JerryZLiu/Dayflow/issues)

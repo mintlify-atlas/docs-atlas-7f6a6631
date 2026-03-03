@@ -1,0 +1,380 @@
+---
+title: 'URL Scheme Automation'
+description: 'Control Dayflow recording with URL schemes and Shortcuts'
+---
+
+Dayflow registers the `dayflow://` URL scheme, allowing you to control recording from external tools, scripts, and Shortcuts.
+
+## Supported URLs
+
+Dayflow supports two primary actions:
+
+### Start Recording
+
+```
+dayflow://start-recording
+```
+
+Starts screen recording (no-op if already recording).
+
+**Alternative formats** (all equivalent):
+- `dayflow://start`
+- `dayflow://resume`
+
+### Stop Recording
+
+```
+dayflow://stop-recording
+```
+
+Stops screen recording (no-op if already stopped).
+
+**Alternative formats** (all equivalent):
+- `dayflow://stop`
+- `dayflow://pause`
+
+<CodeGroup>
+```swift AppDeepLinkRouter.swift:10-24
+enum Action: String {
+    case startRecording = "start-recording"
+    case stopRecording = "stop-recording"
+
+    init?(identifier: String) {
+        switch identifier.lowercased() {
+        case Self.startRecording.rawValue, "start", "resume":
+            self = .startRecording
+        case Self.stopRecording.rawValue, "stop", "pause":
+            self = .stopRecording
+        default:
+            return nil
+        }
+    }
+}
+```
+</CodeGroup>
+
+## Quick Tests
+
+Test the URL scheme from Terminal:
+
+```bash
+# Start recording
+open dayflow://start-recording
+
+# Stop recording
+open dayflow://stop-recording
+```
+
+## Shortcuts Integration
+
+Create automation workflows using the Shortcuts app:
+
+### Example: Start Recording Shortcut
+
+<Steps>
+  <Step title="Open Shortcuts app">
+    Launch the **Shortcuts** app on your Mac
+  </Step>
+  <Step title="Create new Shortcut">
+    Click **+** to create a new shortcut
+  </Step>
+  <Step title="Add Open URLs action">
+    Search for and add the **Open URLs** action
+  </Step>
+  <Step title="Enter URL">
+    Type `dayflow://start-recording` in the URL field
+  </Step>
+  <Step title="Name and save">
+    Name it "Start Dayflow Recording" and save
+  </Step>
+</Steps>
+
+### Example: Stop Recording Shortcut
+
+Repeat the same steps but use `dayflow://stop-recording` as the URL.
+
+### Advanced: Toggle Recording
+
+Create a more sophisticated shortcut that toggles recording state:
+
+<CodeGroup>
+```applescript Toggle Recording Shortcut
+# Get current recording state (requires scripting Dayflow UI)
+if application "Dayflow" is running then
+    # Check menu bar state or use defaults read
+    set isRecording to do shell script "defaults read com.dayflow.app isRecording"
+    
+    if isRecording is "1" then
+        open location "dayflow://stop-recording"
+    else
+        open location "dayflow://start-recording"
+    end if
+else
+    # Launch Dayflow and start recording
+    open location "dayflow://start-recording"
+end if
+```
+</CodeGroup>
+
+<Note>
+This example requires additional scripting to read Dayflow's recording state. The URL scheme alone doesn't provide state information.
+</Note>
+
+## Keyboard Shortcuts
+
+Combine URL schemes with keyboard launcher tools:
+
+### Using Raycast
+
+1. Create a new **Script Command** in Raycast
+2. Add the following script:
+
+```bash
+#!/bin/bash
+
+# Required parameters:
+# @raycast.schemaVersion 1
+# @raycast.title Start Dayflow
+# @raycast.mode silent
+
+open dayflow://start-recording
+```
+
+3. Assign a keyboard shortcut (e.g., `⌘⇧D`)
+
+### Using Alfred
+
+1. Create a new **Workflow** in Alfred
+2. Add a **Hotkey** trigger
+3. Add **Open URL** action with `dayflow://start-recording`
+4. Connect the trigger to the action
+5. Assign your preferred keyboard shortcut
+
+## Automation Scripts
+
+### Time-Based Recording
+
+Schedule recording start/stop with `cron` or `launchd`:
+
+<CodeGroup>
+```bash Start Recording at 9 AM
+#!/bin/bash
+# Save as ~/scripts/start-dayflow.sh
+
+open dayflow://start-recording
+```
+
+```xml com.dayflow.morning-start.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.dayflow.morning-start</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/YOUR_USERNAME/scripts/start-dayflow.sh</string>
+    </array>
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>9</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+</dict>
+</plist>
+```
+</CodeGroup>
+
+Load the launch agent:
+
+```bash
+cp com.dayflow.morning-start.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/com.dayflow.morning-start.plist
+```
+
+### Focus Mode Integration
+
+Start/stop recording when entering/exiting macOS Focus modes:
+
+<CodeGroup>
+```applescript Focus Mode Trigger
+on focusDidChange(focusMode)
+    if focusMode is "Work" then
+        open location "dayflow://start-recording"
+    else if focusMode is "Personal" or focusMode is "Do Not Disturb" then
+        open location "dayflow://stop-recording"
+    end if
+end focusDidChange
+```
+</CodeGroup>
+
+<Note>
+Focus mode integration requires a third-party automation tool like **BetterTouchTool** or **Keyboard Maestro** to detect focus changes.
+</Note>
+
+## Deep Link Resolution
+
+Dayflow's URL scheme parser is flexible:
+
+<CodeGroup>
+```swift AppDeepLinkRouter.swift:43-68
+private func resolveAction(from url: URL) -> Action? {
+    guard let scheme = url.scheme, scheme.caseInsensitiveCompare("dayflow") == .orderedSame else {
+        return nil
+    }
+
+    var candidates: [String] = []
+    if let host = url.host, !host.isEmpty {
+        candidates.append(host)
+    }
+
+    let pathComponents = url.path
+        .split(separator: "/")
+        .map { String($0) }
+
+    candidates.append(contentsOf: pathComponents)
+
+    if candidates.isEmpty {
+        if let actionItem = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name.lowercased() == "action" }),
+           let value = actionItem.value, !value.isEmpty {
+            candidates.append(value)
+        }
+    }
+
+    guard let identifier = candidates.first else { return nil }
+    return Action(identifier: identifier)
+}
+```
+</CodeGroup>
+
+### Supported URL Formats
+
+All of these are valid:
+
+```
+dayflow://start-recording
+dayflow://start
+dayflow:///start-recording  (extra slash)
+dayflow://host/start-recording  (host-based)
+dayflow://?action=start-recording  (query parameter)
+```
+
+<Note>
+Case-insensitive: `dayflow://START-RECORDING` works the same as `dayflow://start-recording`
+</Note>
+
+## Analytics Tracking
+
+Deeplink-triggered state changes are logged as `reason: "deeplink"` in analytics:
+
+<CodeGroup>
+```swift AppDeepLinkRouter.swift:79-95
+private func startRecording() {
+    guard !AppState.shared.isRecording else {
+        print("[DeepLink] Recording already active; ignoring start request")
+        return
+    }
+    delegate?.prepareForRecordingToggle(reason: "deeplink")
+    AppState.shared.isRecording = true
+}
+
+private func stopRecording() {
+    guard AppState.shared.isRecording else {
+        print("[DeepLink] Recording already stopped; ignoring stop request")
+        return
+    }
+    delegate?.prepareForRecordingToggle(reason: "deeplink")
+    AppState.shared.isRecording = false
+}
+```
+</CodeGroup>
+
+This allows you to distinguish automation-triggered toggles from manual UI interactions in usage analytics.
+
+## Troubleshooting
+
+### URL Not Opening
+
+If the URL scheme doesn't work:
+
+1. **Verify Dayflow is installed**: The URL scheme is only registered when Dayflow is installed in `/Applications`
+2. **Check macOS defaults**:
+   ```bash
+   defaults read com.apple.LaunchServices/com.apple.launchservices.secure LSHandlers
+   ```
+   Look for `dayflow` in the output
+3. **Re-register the scheme**: Restart Dayflow or reinstall the app
+
+### Action Not Triggering
+
+If the URL opens but nothing happens:
+
+1. **Check Dayflow is running**: The app must be running to handle URL events
+2. **Review Console logs**: Open Console.app and filter for "Dayflow" to see deep link processing logs
+3. **Test with Terminal**: Use `open dayflow://start-recording` to see error messages
+
+### Permission Issues
+
+If automation scripts fail:
+
+1. **Grant Automation permissions**: System Settings → Privacy & Security → Automation
+2. **Allow Terminal/Script Editor**: Enable access for the app running your scripts
+3. **Check sandboxing**: Some automation tools require Full Disk Access
+
+## Advanced Use Cases
+
+### GitHub Actions Integration
+
+Trigger recording during CI/CD runs (for local testing):
+
+<CodeGroup>
+```yaml .github/workflows/test.yml
+name: Test with Dayflow Recording
+on: [push]
+jobs:
+  test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Start Dayflow Recording
+        run: open dayflow://start-recording
+      - name: Run Tests
+        run: npm test
+      - name: Stop Dayflow Recording
+        run: open dayflow://stop-recording
+```
+</CodeGroup>
+
+### Hammerspoon Integration
+
+Use Hammerspoon to create custom triggers:
+
+<CodeGroup>
+```lua ~/.hammerspoon/init.lua
+-- Start recording when connected to external monitor
+function monitorWatcher()
+    local screens = hs.screen.allScreens()
+    if #screens > 1 then
+        hs.urlevent.openURL("dayflow://start-recording")
+    else
+        hs.urlevent.openURL("dayflow://stop-recording")
+    end
+end
+
+screenWatcher = hs.screen.watcher.new(monitorWatcher)
+screenWatcher:start()
+```
+</CodeGroup>
+
+### BetterTouchTool Triggers
+
+Create touch bar buttons or keyboard shortcuts:
+
+1. Open **BetterTouchTool**
+2. Add a **New Trigger** (e.g., Keyboard Shortcut)
+3. Set action to **Open URL**
+4. Enter `dayflow://start-recording` or `dayflow://stop-recording`
+5. Customize with icons and labels

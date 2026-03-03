@@ -1,0 +1,92 @@
+---
+title: Privacy Overview
+description: Understand how Dayflow protects your privacy with local-first architecture
+---
+
+Dayflow is designed with privacy as a core principle. Your data stays on your Mac, and you choose how it's processed.
+
+## Local-First Architecture
+
+Dayflow follows a **local-first** approach:
+
+- All screen recordings and timeline data are stored **only on your Mac**
+- No Dayflow servers collect or store your activity data
+- You have complete control over your data and can delete it at any time
+- The app is fully **open-source** - inspect the codebase to verify how data is handled
+
+## What Data is Stored
+
+Dayflow stores the following data locally on your Mac:
+
+| Data Type | Location | Purpose |
+|-----------|----------|----------|
+| **Screen recordings** | `~/Library/Application Support/Dayflow/recordings/` | Video chunks of your screen activity |
+| **Timeline database** | `~/Library/Application Support/Dayflow/chunks.sqlite` | Metadata and analyzed timeline entries |
+| **App preferences** | Standard macOS preferences | Settings and configuration |
+
+<Info>
+All data is stored in `~/Library/Application Support/Dayflow/`. You can access recordings via **Dayflow menu bar icon → Open Recordings**.
+</Info>
+
+## What Leaves Your Machine
+
+What data (if any) leaves your Mac depends entirely on your **AI provider choice**:
+
+### Gemini (Cloud Processing)
+- **What's sent:** Screen recording chunks are uploaded to Google's Gemini API for analysis
+- **When:** Periodically during timeline generation
+- **Data retention:** Depends on your billing configuration (see [AI Providers](/privacy/ai-providers))
+
+### Local Models (Fully Offline)
+- **What's sent:** Nothing - all processing happens on your Mac
+- **When:** Never
+- **Data retention:** Only stored locally
+
+### ChatGPT / Claude (CLI-Based)
+- **What's sent:** Screen recording chunks are processed by OpenAI or Anthropic
+- **When:** Periodically during timeline generation
+- **Data retention:** Review OpenAI's or Anthropic's privacy policies
+
+<Note>
+Compare privacy levels across providers in [AI Providers](/privacy/ai-providers).
+</Note>
+
+## macOS Permissions Required
+
+Dayflow requires one system permission to function:
+
+### Screen & System Audio Recording
+
+**Why it's needed:** To capture your screen activity and create your timeline.
+
+**How to grant:**
+1. Open **System Settings**
+2. Navigate to **Privacy & Security**
+3. Select **Screen & System Audio Recording**
+4. Enable **Dayflow**
+
+**How to revoke:** Follow the same steps and disable Dayflow. The app will stop capturing until you re-enable the permission.
+
+<Info>
+Learn more about this permission in [Apple's official documentation](https://support.apple.com/guide/mac-help/control-access-screen-system-audio-recording-mchld6aa7d23/mac).
+</Info>
+
+## Your Control
+
+You maintain complete control over your data:
+
+- **Delete anytime:** Remove all Dayflow data by deleting `~/Library/Application Support/Dayflow/`
+- **Automatic cleanup:** Configure storage limits (1GB–20GB or unlimited) to manage disk usage
+- **Open source:** Audit the entire codebase on [GitHub](https://github.com/JerryZLiu/Dayflow)
+- **No lock-in:** All data is stored locally in standard formats
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Data Storage" icon="database" href="/privacy/data-storage">
+    Detailed information about where and how data is stored
+  </Card>
+  <Card title="AI Providers" icon="brain" href="/privacy/ai-providers">
+    Compare privacy implications of different AI providers
+  </Card>
+</CardGroup>

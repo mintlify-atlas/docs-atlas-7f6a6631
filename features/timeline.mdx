@@ -1,0 +1,168 @@
+---
+title: Automatic Timeline
+description: How Dayflow captures and analyzes your screen activity to build a detailed timeline of your day
+---
+
+## Overview
+
+Dayflow's automatic timeline is the core feature that watches your screen and generates a detailed, AI-powered record of how you spend your time. Unlike traditional time trackers that only log which app is open, Dayflow understands **context** — the difference between "researching on YouTube" and "watching cat videos."
+
+<Note>
+  Timeline generation runs entirely in the background. You don't need to manually start or stop tracking — just enable recording and Dayflow handles the rest.
+</Note>
+
+## How It Works
+
+### 1. Capture
+
+Dayflow takes periodic screenshots of your active display every **10 seconds** (configurable). These screenshots are:
+
+- Scaled to ~1080p resolution for efficiency
+- Compressed as JPEG at 85% quality
+- Stored locally in `~/Library/Application Support/Dayflow/recordings/`
+- Never uploaded until you choose to analyze them
+
+<Info>
+  **Privacy first**: Screenshots stay on your Mac. Nothing leaves your machine until analysis is triggered, and only to the AI provider you've configured.
+</Info>
+
+The capture system automatically pauses during:
+- System sleep
+- Screen lock
+- Screensaver activation
+
+And automatically resumes when you return.
+
+### 2. Analyze
+
+Every minute, Dayflow checks for unprocessed screenshots and groups them into **batches** based on:
+
+- **Duration**: Batches target your configured duration (varies by AI provider)
+- **Continuity**: Gaps larger than the configured threshold create new batches
+- **Minimum activity**: Only batches with 5+ minutes of activity are processed
+
+Batches are sent to your chosen AI provider for analysis.
+
+### 3. Generate Timeline Cards
+
+Your AI provider processes the screenshots and generates **timeline cards** — structured summaries of your activity:
+
+```json
+{
+  "title": "Coding Swift animation work",
+  "startTimestamp": "2:15 PM",
+  "endTimestamp": "3:45 PM",
+  "category": "Development",
+  "summary": "Dialing in spring curves and reverse logic for timeline card animations"
+}
+```
+
+Each card includes:
+- **Time range**: When the activity occurred
+- **Title**: Concise description of what you were doing
+- **Summary**: AI-generated context about the work
+- **Category**: Automatically classified (e.g., Development, Communication, Research)
+- **Detailed summary**: Deeper insights when available
+
+### 4. Display
+
+Timeline cards appear in the main Dayflow UI, organized chronologically. You can:
+
+- **Scroll through your day** — see exactly where your time went
+- **Review summaries** — understand context at a glance
+- **Navigate by date** — explore past days
+- **View app icons** — see which applications were active (optional)
+
+## Context-Aware Tracking
+
+Dayflow's AI analysis goes beyond simple app monitoring:
+
+| Traditional Time Tracker | Dayflow |
+|-------------------------|----------|
+| "2 hours in Chrome" | "Researching SwiftUI animation APIs" |
+| "1 hour in Slack" | "Planning Q1 roadmap with design team" |
+| "30 minutes in YouTube" | "Learning about Combine framework patterns" |
+
+The AI understands:
+- **What** you were working on (not just which app)
+- **Context** from window titles, visible text, and UI elements
+- **Transitions** between different types of work
+- **Focus periods** vs. context switching
+
+## Navigating Your Timeline
+
+### Viewing Today
+
+The timeline defaults to "today" using a **4AM boundary** — meaning your "day" runs from 4AM to 3:59AM the next morning. This ensures late-night work sessions aren't artificially split across calendar days.
+
+### Browsing Past Days
+
+Use the date picker or navigation arrows to explore previous days. Timeline cards are permanently stored in your local database (`chunks.sqlite`).
+
+### Searching & Filtering
+
+While Dayflow doesn't currently have built-in search, you can:
+
+1. Export your timeline as Markdown (see [Export](/features/export))
+2. Use your favorite text editor to search exported data
+
+## Storage Management
+
+Screenshots accumulate quickly. Dayflow includes automatic storage cleanup:
+
+- **Configurable limits**: Set storage caps from 1GB to 20GB (or unlimited)
+- **Automatic purging**: Old screenshots are deleted when limits are reached
+- **Manual cleanup**: Quit Dayflow and delete `~/Library/Application Support/Dayflow/` to start fresh
+
+See [Storage Configuration](/configuration/storage) for details.
+
+## Performance
+
+Dayflow is designed to be lightweight:
+
+- **App size**: ~25MB
+- **RAM usage**: ~100MB
+- **CPU usage**: Less than 1% (during capture)
+- **Battery impact**: Minimal — screenshot capture is far less intensive than continuous video recording
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="No timeline cards appear">
+    1. Check that **Screen & System Audio Recording** permission is enabled in **System Settings → Privacy & Security**
+    2. Verify your AI provider is configured in **Settings → AI Provider**
+    3. Ensure you have at least 5 minutes of continuous activity
+    4. Check the Debug view (menu bar icon → Debug) for batch processing status
+  </Accordion>
+
+  <Accordion title="Timeline cards are incomplete or inaccurate">
+    1. **Local models**: May struggle with complex contexts — consider switching to Gemini or ChatGPT/Claude
+    2. **Low activity**: Short bursts of activity (less than 5 minutes) are skipped
+    3. **Provider issues**: Check your API key or CLI tool authentication
+  </Accordion>
+
+  <Accordion title="Recording pauses unexpectedly">
+    Recording automatically pauses during:
+    - System sleep or screen lock
+    - Screensaver activation
+    
+    This is intentional to avoid capturing sensitive content or blank screens.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="AI Providers" icon="brain" href="/features/ai-providers">
+    Learn about Gemini, local models, and ChatGPT/Claude options
+  </Card>
+  <Card title="Export Timeline" icon="download" href="/features/export">
+    Export your timeline as Markdown for external use
+  </Card>
+  <Card title="Timelapse" icon="film" href="/features/timelapse">
+    Watch visual timelapses of your screen activity
+  </Card>
+  <Card title="Journal" icon="book" href="/features/journal">
+    Track intentions and reflections alongside your timeline
+  </Card>
+</CardGroup>

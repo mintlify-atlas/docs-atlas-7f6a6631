@@ -1,0 +1,307 @@
+---
+title: AI Provider Support
+description: Choose between Gemini, local models, or ChatGPT/Claude for timeline generation
+---
+
+## Overview
+
+Dayflow supports three AI provider options, each with different trade-offs for **privacy**, **quality**, and **performance**. You choose which provider to use based on your priorities.
+
+<Tip>
+  All providers generate the same timeline cards — only the **processing pipeline** and **privacy model** differ.
+</Tip>
+
+## Provider Comparison
+
+| Provider | Privacy | Quality | Speed | LLM Calls | Cost |
+|----------|---------|---------|-------|-----------|------|
+| **Gemini** | Cloud (BYO API key) | Excellent | Fast | 2 per batch | Free tier available |
+| **Local Models** | 100% offline | Good | Moderate | 33+ per batch | Free |
+| **ChatGPT/Claude** | Cloud (paid subscription) | Best | Fast | 4-6 per batch | $20/month |
+
+## Gemini (Cloud)
+
+### How It Works
+
+Gemini uses Google's native video understanding API to process your screenshots efficiently:
+
+1. **Upload + Transcribe** (1 LLM call): Batch of screenshots is uploaded and analyzed
+2. **Generate Cards** (1 LLM call): AI generates timeline cards from the analysis
+
+**Total: 2 LLM calls per batch**
+
+### Privacy Considerations
+
+- **Data sent to Google**: Screenshot batches are uploaded to Google's Gemini API
+- **Bring your own API key**: You control the API key and billing
+- **Paid Services data handling**: If you enable Cloud Billing on any Gemini project, Google does **not** use your prompts/responses to train models (see [Gemini API Terms](https://ai.google.dev/gemini-api/terms#paid-services-how-google-uses-your-data))
+- **Abuse monitoring**: Google logs prompts for policy enforcement, even under Paid Services
+
+<Info>
+  **EEA/UK/Switzerland users**: Paid-style data handling applies by default, even without billing enabled.
+</Info>
+
+### Setup
+
+1. Get a Gemini API key: [https://ai.google.dev/gemini-api/docs/api-key](https://ai.google.dev/gemini-api/docs/api-key)
+2. Open Dayflow → **Settings → AI Provider**
+3. Select **Gemini**
+4. Enter your API key
+
+See [Gemini Configuration](/configuration/gemini) for detailed setup instructions.
+
+### Model Selection
+
+Dayflow supports multiple Gemini models:
+
+- **Gemini 1.5 Flash** (default): Fast and cost-effective
+- **Gemini 1.5 Pro**: Higher quality, slower, more expensive
+- **Gemini 2.0 Flash**: Latest model with improved reasoning
+
+Configure in **Settings → AI Provider → Model**.
+
+### Fallback to Gemma
+
+If Gemini's video API fails (e.g., rate limits, API errors), Dayflow automatically falls back to **Gemma** (a text-only model) to extract frame descriptions. This increases LLM call count but ensures timeline generation continues.
+
+---
+
+## Local Models (Ollama / LM Studio)
+
+### How It Works
+
+Local models process screenshots entirely on your Mac using a local inference server:
+
+1. **Extract 30 frames** from the screenshot batch
+2. **Describe frames** (30 LLM calls): Each frame is analyzed individually
+3. **Merge descriptions** (1 call): Combine frame descriptions into observations
+4. **Generate title** (1 call): Create a title for the observation
+5. **Merge check** (1 call): Decide if observations should be combined
+6. **Merge cards** (1 call): Finalize timeline cards
+
+**Total: 33+ LLM calls per batch**
+
+### Privacy Considerations
+
+- **100% offline**: All processing happens on your Mac
+- **No data leaves your machine**: Screenshots, prompts, and responses stay local
+- **Model downloads**: Models are downloaded once from Ollama/LM Studio and cached locally
+
+<Check>
+  Local models are the **most private** option — no cloud services involved.
+</Check>
+
+### Setup
+
+#### Option 1: Ollama
+
+1. Install Ollama: [https://ollama.com/](https://ollama.com/)
+2. Pull a vision model (e.g., `llama3.2-vision`):
+   ```bash
+   ollama pull llama3.2-vision
+   ```
+3. Start Ollama server:
+   ```bash
+   ollama serve
+   ```
+4. Open Dayflow → **Settings → AI Provider**
+5. Select **Local (Ollama/LM Studio)**
+6. Enter endpoint: `http://localhost:11434` (default Ollama port)
+
+#### Option 2: LM Studio
+
+1. Download LM Studio: [https://lmstudio.ai/](https://lmstudio.ai/)
+2. Download a vision-capable model from the LM Studio UI
+3. Start the local server (default: `http://localhost:1234`)
+4. Open Dayflow → **Settings → AI Provider**
+5. Select **Local (Ollama/LM Studio)**
+6. Enter endpoint: `http://localhost:1234`
+
+See [Local Models Configuration](/configuration/local-models) for detailed setup.
+
+### Performance & Battery
+
+- **GPU-heavy**: Local inference uses Apple Silicon GPU acceleration
+- **Battery drain**: Expect faster battery drain during processing
+- **Recommendation**: Keep your Mac plugged in for long capture sessions
+- **Quality**: Open-source models may underperform cloud models on complex contexts
+
+<Warning>
+  Local models trade quality and battery life for maximum privacy. For best results, use plugged-in and test different models.
+</Warning>
+
+---
+
+## ChatGPT / Claude (CLI-Based)
+
+### How It Works
+
+ChatGPT/Claude use CLI tools to batch-process screenshots with frontier reasoning models:
+
+1. **Extract frames** (every 60s)
+2. **Batch describe** (10 frames per call): Describe frames in batches
+3. **Merge segments** (1 call): Combine descriptions into observations
+4. **Generate Cards** (1 call): Create timeline cards
+
+**Total: 4-6 LLM calls per batch**
+
+### Privacy Considerations
+
+- **Data sent to OpenAI/Anthropic**: Screenshots are processed by OpenAI (ChatGPT) or Anthropic (Claude)
+- **Subscription required**: You **must** have an active paid subscription:
+  - ChatGPT Plus/Pro: $20+/month
+  - Claude Pro: $20/month
+- **No offline mode**: Requires active internet connection
+
+### Setup
+
+#### ChatGPT (Codex CLI)
+
+1. Install Codex CLI: [https://github.com/openai/codex](https://github.com/openai/codex)
+2. Sign in with your **ChatGPT Plus/Pro** account
+3. Open Dayflow → **Settings → AI Provider**
+4. Select **ChatGPT/Claude**
+5. Choose **Codex** as the CLI tool
+
+#### Claude (Claude Code)
+
+1. Install Claude Code: [https://docs.anthropic.com/en/docs/claude-code](https://docs.anthropic.com/en/docs/claude-code)
+2. Sign in with your **Claude Pro** account
+3. Open Dayflow → **Settings → AI Provider**
+4. Select **ChatGPT/Claude**
+5. Choose **Claude** as the CLI tool
+
+See [ChatGPT/Claude Configuration](/configuration/chatgpt-claude) for detailed setup.
+
+### Quality
+
+ChatGPT and Claude provide the **highest quality** timeline summaries:
+
+- **Best-in-class narrative quality**: Frontier reasoning models excel at context understanding
+- **Nuanced insights**: Better at distinguishing similar activities
+- **Consistent formatting**: More reliable card structure
+
+<Tip>
+  If quality is your top priority and you already have a ChatGPT Plus or Claude Pro subscription, this is the best option.
+</Tip>
+
+---
+
+## Processing Pipeline Comparison
+
+<Tabs>
+  <Tab title="Gemini">
+    ```mermaid
+    flowchart LR
+        A[Screenshots] --> B[Upload + Transcribe<br/>1 LLM call]
+        B --> C[Generate Cards<br/>1 LLM call]
+        C --> D[Timeline Cards]
+
+        style A fill:#e8f5e8,stroke:#4caf50
+        style B fill:#4caf50,color:#fff
+        style C fill:#4caf50,color:#fff
+        style D fill:#e3f2fd,stroke:#1976d2
+    ```
+    
+    **Efficiency**: 2 LLM calls per batch  
+    **Strengths**: Fast, cost-effective, leverages native video understanding  
+    **Trade-offs**: Data sent to Google
+  </Tab>
+  
+  <Tab title="Local">
+    ```mermaid
+    flowchart LR
+        A[Screenshots] --> B[Extract 30 frames]
+        B --> C[30 descriptions<br/>30 LLM calls]
+        C --> D[Merge<br/>1 call]
+        D --> E[Title<br/>1 call]
+        E --> F[Merge Check<br/>1 call]
+        F --> G[Merge Cards<br/>1 call]
+        G --> H[Timeline Cards]
+
+        style A fill:#fff8e1,stroke:#ff9800
+        style C fill:#ff9800,color:#fff
+        style D fill:#ff9800,color:#fff
+        style E fill:#ff9800,color:#fff
+        style F fill:#ff9800,color:#fff
+        style G fill:#ff9800,color:#fff
+        style H fill:#e3f2fd,stroke:#1976d2
+    ```
+    
+    **Efficiency**: 33+ LLM calls per batch  
+    **Strengths**: 100% offline, maximum privacy  
+    **Trade-offs**: GPU-intensive, battery drain, variable quality
+  </Tab>
+  
+  <Tab title="ChatGPT/Claude">
+    ```mermaid
+    flowchart LR
+        A[Screenshots] --> B[Extract frames<br/>every 60s]
+        B --> C[Batch describe<br/>10 frames/call]
+        C --> D[Merge segments<br/>1 call]
+        D --> E[Generate Cards<br/>1 call]
+        E --> F[Timeline Cards]
+
+        style A fill:#e3f2fd,stroke:#1976d2
+        style C fill:#1976d2,color:#fff
+        style D fill:#1976d2,color:#fff
+        style E fill:#1976d2,color:#fff
+        style F fill:#e3f2fd,stroke:#1976d2
+    ```
+    
+    **Efficiency**: 4-6 LLM calls per batch  
+    **Strengths**: Best quality, frontier reasoning models  
+    **Trade-offs**: Requires paid subscription, data sent to OpenAI/Anthropic
+  </Tab>
+</Tabs>
+
+---
+
+## Choosing the Right Provider
+
+<AccordionGroup>
+  <Accordion title="I want maximum privacy and don't mind slower processing">
+    → **Local Models (Ollama/LM Studio)**
+    
+    Best for: Privacy advocates, offline workflows, users with powerful Macs
+  </Accordion>
+
+  <Accordion title="I want a good balance of quality, speed, and cost">
+    → **Gemini**
+    
+    Best for: Most users, especially those comfortable with Google's data handling under Paid Services
+  </Accordion>
+
+  <Accordion title="I want the absolute best quality and already have a ChatGPT/Claude subscription">
+    → **ChatGPT/Claude**
+    
+    Best for: Users prioritizing quality, existing Plus/Pro subscribers
+  </Accordion>
+
+  <Accordion title="I don't trust any cloud provider with my data">
+    → **Local Models**
+    
+    Only local models keep 100% of your data on your machine.
+  </Accordion>
+</AccordionGroup>
+
+## Switching Providers
+
+You can switch providers at any time in **Settings → AI Provider**. Existing timeline cards remain unchanged — only future batches use the new provider.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Gemini Setup" icon="google" href="/configuration/gemini">
+    Configure Gemini with your API key
+  </Card>
+  <Card title="Local Models Setup" icon="laptop" href="/configuration/local-models">
+    Set up Ollama or LM Studio for offline processing
+  </Card>
+  <Card title="ChatGPT/Claude Setup" icon="comments" href="/configuration/chatgpt-claude">
+    Configure CLI-based inference
+  </Card>
+  <Card title="Privacy Overview" icon="shield" href="/privacy/overview">
+    Learn about data handling and privacy
+  </Card>
+</CardGroup>

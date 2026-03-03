@@ -1,0 +1,189 @@
+---
+title: Installation
+description: Detailed installation instructions for Dayflow on macOS
+---
+
+## System Requirements
+
+- **macOS 13.0+** (Ventura or later)
+- **~100MB RAM** during operation
+- **25MB** disk space for the app
+- **1GB-20GB** for recordings (configurable storage limits)
+
+<Note>
+Building from source requires **Xcode 15+**
+</Note>
+
+## Installation Methods
+
+### From GitHub Releases (Recommended)
+
+The easiest way to install Dayflow is to download the pre-built DMG:
+
+<Steps>
+  <Step title="Download the DMG">
+    Download `Dayflow.dmg` from the [latest release](https://github.com/JerryZLiu/Dayflow/releases/latest).
+  </Step>
+
+  <Step title="Install the App">
+    1. Open the downloaded `Dayflow.dmg` file
+    2. Drag **Dayflow** into your **Applications** folder
+    3. Eject the DMG
+  </Step>
+
+  <Step title="Launch Dayflow">
+    Open Dayflow from your Applications folder. You'll be prompted to grant permissions in the next step.
+  </Step>
+</Steps>
+
+### From Homebrew
+
+If you use [Homebrew](https://brew.sh/), you can install Dayflow with a single command:
+
+```bash
+brew install --cask dayflow
+```
+
+This will download and install Dayflow automatically. Launch it from your Applications folder or Spotlight.
+
+### Building from Source
+
+Developers can build Dayflow from source for maximum transparency and customization:
+
+<Steps>
+  <Step title="Clone the Repository">
+    ```bash
+    git clone https://github.com/JerryZLiu/Dayflow.git
+    cd Dayflow
+    ```
+  </Step>
+
+  <Step title="Open in Xcode">
+    ```bash
+    open Dayflow.xcodeproj
+    ```
+    
+    <Note>
+    Requires **Xcode 15+**. Download from the [Mac App Store](https://apps.apple.com/us/app/xcode/id497799835) if you don't have it installed.
+    </Note>
+  </Step>
+
+  <Step title="Configure Signing (if needed)">
+    1. Select the **Dayflow** target in Xcode
+    2. Go to **Signing & Capabilities**
+    3. Select your development team or use automatic signing
+  </Step>
+
+  <Step title="Add Environment Variables (Optional)">
+    If you plan to use Gemini from your development build:
+    
+    1. Select **Product** → **Scheme** → **Edit Scheme**
+    2. Go to **Run** → **Arguments**
+    3. Under **Environment Variables**, add:
+       - **Name:** `GEMINI_API_KEY`
+       - **Value:** Your Gemini API key from [Google AI Studio](https://ai.google.dev/gemini-api/docs/api-key)
+  </Step>
+
+  <Step title="Build and Run">
+    1. Select the **Dayflow** scheme
+    2. Choose your Mac as the target device
+    3. Click **Run** (⌘R) or **Product** → **Run**
+  </Step>
+</Steps>
+
+## Granting Permissions
+
+Dayflow requires **Screen & System Audio Recording** permissions to capture your activity.
+
+<Warning>
+Without these permissions, Dayflow cannot record your screen or generate timelines.
+</Warning>
+
+### Automatic Permission Request
+
+When you first launch Dayflow, macOS will prompt you to grant Screen Recording permissions. Click **Open System Settings** and enable Dayflow.
+
+### Manual Permission Setup
+
+If you need to grant permissions manually or if something went wrong:
+
+<Steps>
+  <Step title="Open System Settings">
+    Click the Apple menu → **System Settings**
+  </Step>
+
+  <Step title="Navigate to Privacy & Security">
+    In the sidebar, select **Privacy & Security**
+  </Step>
+
+  <Step title="Select Screen & System Audio Recording">
+    Scroll down and click **Screen & System Audio Recording**
+  </Step>
+
+  <Step title="Enable Dayflow">
+    1. Find **Dayflow** in the list
+    2. Toggle the switch to enable it
+    3. You may need to authenticate with Touch ID or your password
+  </Step>
+
+  <Step title="Restart Dayflow">
+    Quit and relaunch Dayflow for the permissions to take effect.
+  </Step>
+</Steps>
+
+<Note>
+For more information about Screen Recording permissions, see [Apple's documentation](https://support.apple.com/guide/mac-help/control-access-screen-system-audio-recording-mchld6aa7d23/mac).
+</Note>
+
+## Data Storage Location
+
+All Dayflow data is stored locally on your Mac:
+
+```
+~/Library/Application Support/Dayflow/
+├── recordings/          # Video chunks of your screen capture
+└── chunks.sqlite        # Local database with timeline metadata
+```
+
+### Accessing Recordings
+
+You can open your recordings folder at any time:
+
+1. Click the Dayflow icon in your menu bar
+2. Select **Open Recordings...**
+
+Or navigate to it manually in Finder:
+
+```bash
+open ~/Library/Application\ Support/Dayflow/recordings/
+```
+
+### Storage Management
+
+Dayflow includes **automatic storage cleanup** with configurable limits:
+
+- Set limits from **1GB to 20GB** or choose **unlimited**
+- Older recordings are automatically purged when the limit is reached
+- Configure in **Dayflow Settings** → **Storage**
+
+### Complete Reset
+
+To completely remove all Dayflow data and start fresh:
+
+<Warning>
+This will permanently delete all your recordings and timeline data. This action cannot be undone.
+</Warning>
+
+```bash
+# Quit Dayflow first
+rm -rf ~/Library/Application\ Support/Dayflow/
+# Relaunch Dayflow to start fresh
+```
+
+## Next Steps
+
+Now that Dayflow is installed:
+
+- Follow the [Quickstart guide](/quickstart) to set up your AI provider and start recording
+- Read about [Privacy & Data](/privacy/overview) to understand how different AI providers handle your data
+- Learn about [Configuration options](/configuration/ai-setup) to customize your experience

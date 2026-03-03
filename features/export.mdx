@@ -1,0 +1,302 @@
+---
+title: Timeline Export
+description: Export your timeline as Markdown for any date range
+icon: download
+---
+
+## Overview
+
+Dayflow lets you **export your timeline as Markdown** for any date range. This allows you to:
+
+- Share work summaries with clients or managers
+- Archive personal records outside the app
+- Search your timeline using external tools
+- Import timeline data into other productivity systems
+
+<Note>
+  Exported files are standard Markdown (`.md`) and can be opened in any text editor or Markdown viewer.
+</Note>
+
+## How to Export
+
+### From the App
+
+1. Open Dayflow → **Settings → Other**
+2. Scroll to **Export Timeline**
+3. Select **Start Date** and **End Date**
+4. Click **Export Timeline**
+5. Choose a save location and filename
+6. Click **Export**
+
+Dayflow will generate a Markdown file containing all timeline cards within the specified date range.
+
+<Info>
+  Exports can span **any date range** — from a single day to months of data.
+</Info>
+
+---
+
+## Export Format
+
+Exported files use a clean, readable Markdown format:
+
+```markdown
+## Dayflow timeline · Monday, Nov 24
+
+1. **9:15 AM – 10:45 AM — Coding Swift animation work**
+   - _Development_
+   - Summary: Dialing in spring curves and reverse logic for timeline card animations
+   - Details: Focused on making the timeline feel more responsive. Experimented with different spring damping values.
+
+2. **11:00 AM – 12:30 PM — Team standup and planning**
+   - _Communication_
+   - Summary: Weekly sync with the design team on Q1 roadmap
+
+---
+
+## Dayflow timeline · Tuesday, Nov 25
+
+1. **9:00 AM – 10:30 AM — Email and admin tasks**
+   - _Communication_
+   - Summary: Responding to client emails and scheduling meetings
+
+...
+```
+
+### Format Details
+
+- **Date headers**: Each day starts with a level-2 heading (`##`)
+- **Activity cards**: Numbered list with time ranges and titles in bold
+- **Metadata**: Category shown in italics
+- **Summaries**: Indented under each card
+- **Day separators**: Horizontal rules (`---`) between days
+
+<Tip>
+  The Markdown format is optimized for readability in plain text editors, GitHub, Notion, Obsidian, and other Markdown-compatible tools.
+</Tip>
+
+---
+
+## Use Cases
+
+<AccordionGroup>
+  <Accordion title="Client billing & timesheets">
+    Export a week or month of activity, filter for client-related work, and use it as the basis for invoices or timesheets.
+    
+    **Example**:
+    1. Export last week's timeline
+    2. Search the Markdown file for "Client X"
+    3. Extract relevant cards and time ranges
+    4. Generate billable hours summary
+  </Accordion>
+
+  <Accordion title="Weekly reviews & retrospectives">
+    Export the past week to review patterns:
+    - Where did time go?
+    - Were you focused or context-switching?
+    - Did you hit your goals?
+    
+    Use the exported Markdown as input for personal retrospectives or team reviews.
+  </Accordion>
+
+  <Accordion title="Personal knowledge management">
+    Import exported timelines into tools like **Obsidian**, **Notion**, or **Roam Research** to:
+    - Build a searchable archive of your work
+    - Link timeline entries to project notes
+    - Track long-term productivity trends
+  </Accordion>
+
+  <Accordion title="Proof of work for remote teams">
+    Share exported timelines with managers or teammates to demonstrate:
+    - What you worked on during a sprint
+    - How you spent your week
+    - Evidence of focus time vs. meetings
+    
+    **Privacy tip**: Review the export before sharing to remove any sensitive or irrelevant entries.
+  </Accordion>
+
+  <Accordion title="Data portability & backup">
+    Export your entire timeline periodically as a **backup** or to ensure you have a portable copy of your data outside the app.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Export Options
+
+### Date Range Selection
+
+- **Single day**: Set start and end date to the same day
+- **Week**: Select Monday to Sunday (or any 7-day span)
+- **Month**: Select the 1st to the last day of the month
+- **Custom range**: Choose any start and end date
+
+<Info>
+  Exports use the **4AM boundary** — the same logical day boundary as the timeline. A "day" runs from 4AM to 3:59AM the next morning.
+</Info>
+
+### Filename Suggestion
+
+Dayflow auto-generates a filename based on the date range:
+
+```
+Dayflow timeline 2024-11-18 to 2024-11-24.md
+```
+
+You can customize this before saving.
+
+---
+
+## Export Metadata
+
+After a successful export, Dayflow shows:
+
+- **Number of activities** exported
+- **Number of days** included
+- **Filename** and location
+
+Example:
+```
+Saved 42 activities across 7 days to Dayflow timeline 2024-11-18 to 2024-11-24.md
+```
+
+<Check>
+  Export metadata is **not** included in the Markdown file — only timeline data is exported.
+</Check>
+
+---
+
+## Privacy Considerations
+
+Exported Markdown files contain:
+
+- **Timeline card titles** (e.g., "Coding Swift animation work")
+- **Summaries** (AI-generated descriptions of your activity)
+- **Time ranges** (when activities occurred)
+- **Categories** (e.g., Development, Communication)
+
+<Warning>
+  **Sensitive data**: Review exported files before sharing. They may contain:
+  - Project names
+  - Client information
+  - Private browsing history (if tracked)
+  - Email subject lines or message snippets
+</Warning>
+
+### What's NOT Exported
+
+- **Screenshots**: Exports are text-only — no images
+- **Timelapse videos**: Not included in exports
+- **Journal entries**: Only timeline cards are exported (not journal intentions/reflections)
+- **Raw observations**: Only final timeline cards are exported, not intermediate AI processing data
+
+<Tip>
+  To export journal entries, manually copy content from the Journal view or use a tool to export the SQLite database (`chunks.sqlite`).
+</Tip>
+
+---
+
+## Advanced: Clipboard Export
+
+In addition to file exports, Dayflow supports **clipboard export** for individual days:
+
+1. Navigate to a specific day in the Timeline view
+2. Right-click (or Ctrl+click) on the timeline
+3. Select **Copy timeline to clipboard**
+4. Paste into any text editor
+
+This gives you quick access to a single day's timeline without opening Settings.
+
+<Info>
+  Clipboard export uses the same Markdown format as file exports.
+</Info>
+
+---
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Export button is disabled">
+    The export button is disabled if:
+    
+    1. **Start date is after end date**: Ensure start ≤ end
+    2. **Export already in progress**: Wait for the current export to finish
+    
+    Fix the date range and try again.
+  </Accordion>
+
+  <Accordion title="Export shows 0 activities">
+    If the export contains no activities:
+    
+    1. **No timeline cards**: Ensure you have timeline cards for the selected date range
+    2. **Recording disabled**: Check that recording was enabled during that period
+    3. **Date range issue**: Verify the start and end dates are correct
+  </Accordion>
+
+  <Accordion title="Export file is huge">
+    Large exports (many months) can produce very large Markdown files. To reduce size:
+    
+    1. Export smaller date ranges (e.g., one month at a time)
+    2. Use external tools to compress the Markdown (`.md.zip`)
+    3. Split exports by project or category (manually filter after exporting)
+  </Accordion>
+
+  <Accordion title="Can I export as PDF or HTML?">
+    Dayflow only exports as Markdown (`.md`). To convert to other formats:
+    
+    1. Use **Pandoc** to convert Markdown to PDF, HTML, or DOCX:
+       ```bash
+       pandoc timeline.md -o timeline.pdf
+       ```
+    2. Import into tools like **Notion** or **Obsidian** which support Markdown
+    3. Use online converters like [Markdownify](https://markdownify.js.org/)
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Export Analytics
+
+Dayflow tracks (anonymously) when exports are performed to improve the feature:
+
+- **Date range**: Start and end dates (as day counts, not actual dates)
+- **Activity count**: Number of activities exported
+- **Format**: Always "markdown"
+
+<Check>
+  **No content is tracked** — only metadata about export usage. See [Privacy](/privacy/overview) for details.
+</Check>
+
+---
+
+## Comparison: Export vs. Clipboard
+
+| Feature | File Export | Clipboard Copy |
+|---------|------------|---------------|
+| **Date range** | Any range | Single day only |
+| **Access** | Settings → Other | Right-click on timeline |
+| **Format** | `.md` file | Markdown text |
+| **Best for** | Archiving, sharing | Quick copy-paste |
+
+<Tip>
+  Use **file export** for multi-day ranges and long-term archiving. Use **clipboard copy** for quick sharing of a single day.
+</Tip>
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Timeline" icon="chart-line" href="/features/timeline">
+    Learn how timeline cards are generated
+  </Card>
+  <Card title="Journal" icon="book" href="/features/journal">
+    Track intentions and reflections alongside your timeline
+  </Card>
+  <Card title="Privacy" icon="shield" href="/privacy/overview">
+    Understand what data is stored and shared
+  </Card>
+  <Card title="AI Providers" icon="brain" href="/features/ai-providers">
+    Choose the AI provider that generates your timeline
+  </Card>
+</CardGroup>

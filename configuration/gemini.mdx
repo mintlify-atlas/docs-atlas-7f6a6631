@@ -1,0 +1,227 @@
+---
+title: 'Gemini Configuration'
+description: 'Set up Google Gemini API for timeline analysis'
+---
+
+Gemini offers the most efficient processing pipeline with native video understanding, requiring only 2 LLM calls per batch.
+
+## Getting a Gemini API Key
+
+<Steps>
+  <Step title="Visit Google AI Studio">
+    Go to [https://ai.google.dev/gemini-api/docs/api-key](https://ai.google.dev/gemini-api/docs/api-key)
+  </Step>
+  <Step title="Create or select a project">
+    Sign in with your Google account and create a new project or select an existing one
+  </Step>
+  <Step title="Get your API key">
+    Click "Get API key" and copy the key. Keep it secure - anyone with this key can use your Gemini quota.
+  </Step>
+</Steps>
+
+<Warning>
+Do not commit your API key to version control or share it publicly. Treat it like a password.
+</Warning>
+
+## Setting Up API Key in Dayflow
+
+<Steps>
+  <Step title="Open Settings">
+    Launch Dayflow and go to **Settings → AI Provider**
+  </Step>
+  <Step title="Select Gemini">
+    Choose **Gemini** from the provider options
+  </Step>
+  <Step title="Enter API Key">
+    Paste your API key into the field and save
+  </Step>
+  <Step title="Test the connection">
+    Start recording and verify that batches are processed successfully
+  </Step>
+</Steps>
+
+## Paid Services Data Handling
+
+By default, Google may use your API data to improve their products. To prevent this:
+
+<Steps>
+  <Step title="Enable Cloud Billing">
+    In Google Cloud Console, enable Cloud Billing on **at least one** Gemini API project
+  </Step>
+  <Step title="Verify Paid Status">
+    Go to [AI Studio → API keys](https://aistudio.google.com/app/apikey) and verify you see "Plan: Paid"
+  </Step>
+  <Step title="Data handling changes">
+    Once billing is enabled, **all** Gemini API usage (including free quota) is treated as "Paid Services" - Google will **not** use your prompts/responses to improve products
+  </Step>
+</Steps>
+
+<Note>
+**EEA/UK/Switzerland users**: Paid-style data handling applies by default to all services, even without enabling billing.
+
+Source: [Gemini API Additional Terms - Paid Services](https://ai.google.dev/gemini-api/terms#paid-services-how-google-uses-your-data)
+</Note>
+
+### What Google Still Logs
+
+Even under Paid Services, Google logs prompts/responses for a **limited period** for:
+- Policy enforcement
+- Legal compliance
+- Abuse monitoring
+
+This data is **not used for training** but is temporarily retained for safety purposes.
+
+## Model Selection
+
+Dayflow supports multiple Gemini models with automatic fallback:
+
+### Available Models
+
+| Model | Display Name | Use Case | Fallback |
+|-------|--------------|----------|----------|
+| `gemini-3-flash-preview` | **Gemini 3 Flash** (Default) | Best quality | → 2.5 Flash → Flash Lite |
+| `gemini-2.5-flash` | **Gemini 2.5 Flash** | Balanced | → Flash Lite |
+| `gemini-2.5-flash-lite` | **Flash Lite** | Most affordable | None |
+
+### Fallback Behavior
+
+If the selected model encounters capacity errors (429, 503, 403), Dayflow automatically falls back to the next model in the chain:
+
+<CodeGroup>
+```swift GeminiDirectProvider.swift:466-477
+private func fallbackReason(for code: Int) -> String {
+    switch code {
+    case 429:
+        return "rate_limit_429"
+    case 503:
+        return "service_unavailable_503"
+    case 403:
+        return "forbidden_quota_403"
+    default:
+        return "http_\(code)"
+    }
+}
+```
+</CodeGroup>
+
+<Note>
+Fallback switching is logged in the app and reported to analytics so you can monitor model availability.
+</Note>
+
+## Pricing
+
+Gemini API offers generous free quota:
+- **15 requests per minute** (free tier)
+- **1,500 requests per day** (free tier)
+- **1 million tokens per month** (free tier)
+
+For current pricing details, visit: [https://ai.google.dev/gemini-api/docs/pricing](https://ai.google.dev/gemini-api/docs/pricing)
+
+## Processing Pipeline
+
+Gemini's efficiency comes from native video understanding:
+
+```mermaid
+flowchart LR
+    V[Video Chunk] --> U[Upload + Transcribe<br/>1 LLM call]
+    U --> C[Generate Activity Cards<br/>1 LLM call]
+    C --> D[Timeline Ready]
+```
+
+**Total: 2 LLM calls per 15-minute batch**
+
+### Upload Flow
+
+Dayflow uses resumable uploads for video chunks:
+
+<CodeGroup>
+```swift GeminiDirectProvider.swift:953-1032
+private func uploadResumable(data: Data, mimeType: String) async throws -> String {
+    print("📤 Starting resumable video upload:")
+    print("   Size: \(data.count / 1024 / 1024) MB")
+    print("   MIME Type: \(mimeType)")
+    
+    // 1. Initialize upload
+    var request = URLRequest(url: URL(string: fileEndpoint + "?key=\(apiKey)")!)
+    request.httpMethod = "POST"
+    request.setValue("resumable", forHTTPHeaderField: "X-Goog-Upload-Protocol")
+    request.setValue("start", forHTTPHeaderField: "X-Goog-Upload-Command")
+    request.setValue("\(data.count)", forHTTPHeaderField: "X-Goog-Upload-Raw-Size")
+    
+    // 2. Get upload URL
+    let (responseData, response) = try await URLSession.shared.data(for: request)
+    guard let uploadURL = (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "X-Goog-Upload-URL") else {
+        throw NSError(domain: "GeminiError", code: 4, userInfo: [...])
+    }
+    
+    // 3. Upload video data
+    var uploadRequest = URLRequest(url: URL(string: uploadURL)!)
+    uploadRequest.httpMethod = "PUT"
+    uploadRequest.setValue("upload, finalize", forHTTPHeaderField: "X-Goog-Upload-Command")
+    uploadRequest.httpBody = data
+    
+    let (uploadResponseData, _) = try await URLSession.shared.data(for: uploadRequest)
+    // Parse and return file URI
+}
+```
+</CodeGroup>
+
+## Troubleshooting
+
+### Invalid API Key
+
+If you see "Invalid API key" errors:
+
+1. Verify the key is correct in Settings
+2. Check that the API key has Gemini API access enabled
+3. Ensure there are no extra spaces when pasting
+
+### Rate Limits
+
+If you hit rate limits (429 errors):
+
+1. Dayflow will automatically retry with exponential backoff
+2. Consider upgrading to a paid plan for higher quotas
+3. Check your quota usage in Google Cloud Console
+
+### Video Upload Failures
+
+Dayflow implements retry logic with multiple cycles:
+
+<CodeGroup>
+```swift GeminiDirectProvider.swift:826-904
+private func uploadAndAwait(_ fileURL: URL, mimeType: String, key: String, maxWaitTime: TimeInterval = 3 * 60) async throws -> (fileSize: Int64, fileURI: String) {
+    let fileData = try Data(contentsOf: fileURL)
+    let fileSize = fileData.count
+
+    // Full cycle retry: upload + processing
+    let maxCycles = 3
+    var lastError: Error?
+
+    for cycle in 1...maxCycles {
+        print("🔄 Upload+Processing cycle \(cycle)/\(maxCycles)")
+
+        // Upload with retries (3 attempts)
+        var uploadedFileURI: String? = nil
+        let maxUploadRetries = 3
+        
+        // ... upload retry logic ...
+        
+        // Poll for processing with 3-minute timeout
+        let startTime = Date()
+        while Date().timeIntervalSince(startTime) < maxWaitTime {
+            let status = try await getFileStatus(fileURI: fileURI)
+            if status == "ACTIVE" {
+                return (Int64(fileSize), fileURI)
+            }
+            try await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
+        }
+    }
+}
+```
+</CodeGroup>
+
+If uploads consistently fail:
+1. Check your internet connection
+2. Verify the video file isn't corrupted
+3. Try restarting Dayflow

@@ -1,0 +1,346 @@
+---
+title: 'Storage Management'
+description: 'Configure storage limits and manage your Dayflow data'
+---
+
+Dayflow stores all data locally on your Mac with configurable automatic cleanup.
+
+## Data Locations
+
+All Dayflow data is stored in:
+
+```
+~/Library/Application Support/Dayflow/
+```
+
+### Storage Structure
+
+<CodeGroup>
+```
+Dayflow/
+├── recordings/           # Screenshot files (.jpg)
+├── chunks.sqlite        # Timeline and analysis database
+├── chunks.sqlite-wal    # Write-Ahead Log (WAL mode)
+└── chunks.sqlite-shm    # Shared memory file (WAL mode)
+```
+</CodeGroup>
+
+- **Screenshots**: Captured every ~10 seconds during recording (~/Library/Application Support/Dayflow/recordings/)
+- **Database**: SQLite database storing timeline cards, observations, batches, and metadata
+- **WAL files**: Temporary files for database transactions (automatically managed)
+
+<Note>
+To access the recordings folder quickly, click the **Dayflow** menu bar icon → **Open Recordings...**
+</Note>
+
+## Configurable Storage Limits
+
+Dayflow supports flexible storage management:
+
+### Available Options
+
+<CodeGroup>
+```swift StorageManager.swift:432-520
+final class StorageManager: StorageManaging, @unchecked Sendable {
+    static let shared = StorageManager()
+    
+    private let dbURL: URL
+    private var db: DatabasePool!
+    private let root: URL
+    private let backupsDir: URL
+    
+    var recordingsRoot: URL { root }
+    
+    private init() {
+        let appSupport = fileMgr.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let baseDir = appSupport.appendingPathComponent("Dayflow", isDirectory: true)
+        let recordingsDir = baseDir.appendingPathComponent("recordings", isDirectory: true)
+        let backupDir = baseDir.appendingPathComponent("backups", isDirectory: true)
+        
+        // Ensure directories exist
+        try? fileMgr.createDirectory(at: baseDir, withIntermediateDirectories: true)
+        try? fileMgr.createDirectory(at: recordingsDir, withIntermediateDirectories: true)
+        try? fileMgr.createDirectory(at: backupDir, withIntermediateDirectories: true)
+        
+        root = recordingsDir
+        backupsDir = backupDir
+        dbURL = baseDir.appendingPathComponent("chunks.sqlite")
+    }
+}
+```
+</CodeGroup>
+
+In Settings, you can choose:
+
+- **1 GB** - Minimal storage (~7-10 days of recordings)
+- **5 GB** - Moderate storage (~1-2 months)
+- **10 GB** - Extended storage (~2-3 months)
+- **20 GB** - Long-term storage (~4-6 months)
+- **Unlimited** - No automatic cleanup (manual purge only)
+
+<Warning>
+Actual storage duration depends on your screen resolution and capture frequency. Higher resolution screenshots use more space.
+</Warning>
+
+## Automatic Cleanup Policies
+
+Dayflow automatically manages storage using a purge scheduler:
+
+### Purge Schedule
+
+<CodeGroup>
+```swift StorageManager.swift:509-518
+private init() {
+    // ...
+    
+    // Run initial purge, then schedule hourly
+    purgeIfNeeded()
+    TimelapseStorageManager.shared.purgeIfNeeded()
+    startPurgeScheduler()
+    
+    // Schedule WAL checkpoints every 5 minutes
+    startCheckpointScheduler()
+    
+    // Schedule daily backups
+    startBackupScheduler()
+}
+```
+</CodeGroup>
+
+- **Initial purge**: On app launch
+- **Hourly purge**: Automated cleanup every hour
+- **WAL checkpoint**: Every 5 minutes to persist data
+- **Database backup**: Daily automated backups
+
+### What Gets Purged
+
+When storage exceeds your limit, Dayflow removes:
+
+1. **Oldest screenshots** first (based on capture timestamp)
+2. **Orphaned database records** (screenshots deleted but DB entries remain)
+3. **Soft-deleted timeline cards** (marked as `is_deleted = 1`)
+
+<Note>
+**Timeline cards and observations are preserved** even when source screenshots are purged. You can still view your timeline history.
+</Note>
+
+### Database Schema
+
+<CodeGroup>
+```swift StorageManager.swift:722-740
+CREATE TABLE IF NOT EXISTS screenshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    captured_at INTEGER NOT NULL,
+    file_path TEXT NOT NULL,
+    file_size INTEGER,
+    is_deleted INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_screenshots_captured_at ON screenshots(captured_at);
+
+CREATE TABLE IF NOT EXISTS timeline_cards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    batch_id INTEGER REFERENCES analysis_batches(id) ON DELETE CASCADE,
+    start_ts INTEGER,
+    end_ts INTEGER,
+    is_deleted INTEGER NOT NULL DEFAULT 0,
+    ...
+);
+```
+</CodeGroup>
+
+Screenshots and timeline cards use soft deletion (`is_deleted = 1`) so they can be excluded from queries without immediate file deletion.
+
+## Manual Data Management
+
+### View Current Usage
+
+Check your current storage usage:
+
+1. Open **Settings → Storage**
+2. View total size of recordings directory
+3. See breakdown by data type (screenshots, database, etc.)
+
+### Purge Old Data
+
+To manually free up space:
+
+<Steps>
+  <Step title="Open Settings">
+    Go to **Settings → Storage**
+  </Step>
+  <Step title="Select time range">
+    Choose how far back to keep data (e.g., "Last 30 days")
+  </Step>
+  <Step title="Preview impact">
+    See how much space will be freed
+  </Step>
+  <Step title="Confirm purge">
+    Click **Purge** to remove old data
+  </Step>
+</Steps>
+
+### Reset All Data
+
+To completely reset Dayflow and start fresh:
+
+<Steps>
+  <Step title="Quit Dayflow">
+    Ensure the app is completely closed
+  </Step>
+  <Step title="Delete data directory">
+    Remove the entire Dayflow folder:
+    ```bash
+    rm -rf ~/Library/Application\ Support/Dayflow/
+    ```
+  </Step>
+  <Step title="Relaunch Dayflow">
+    Open the app - it will create a fresh database and start recording
+  </Step>
+</Steps>
+
+<Warning>
+This is **irreversible** - all timeline history, recordings, and settings will be lost. Consider exporting important timeline data first.
+</Warning>
+
+## Database Backups
+
+Dayflow automatically backs up your database:
+
+### Backup Location
+
+```
+~/Library/Application Support/Dayflow/backups/
+```
+
+Backups are created:
+- **Daily** at scheduled times
+- **Before major migrations** (automatic)
+- **On database corruption recovery** (automatic)
+
+### Restore from Backup
+
+If your database becomes corrupted, Dayflow automatically attempts recovery:
+
+<CodeGroup>
+```swift StorageManager.swift:484-490
+// Safe database initialization with automatic recovery from backup
+db = Self.openDatabaseSafely(
+    at: dbURL,
+    backupsDir: backupDir,
+    config: config,
+    fileManager: fileMgr
+)
+```
+</CodeGroup>
+
+Manual restoration:
+
+<Steps>
+  <Step title="Quit Dayflow">
+    Close the app completely
+  </Step>
+  <Step title="Find latest backup">
+    Navigate to:
+    ```bash
+    ~/Library/Application\ Support/Dayflow/backups/
+    ```
+  </Step>
+  <Step title="Restore backup">
+    Copy the backup file over the current database:
+    ```bash
+    cp ~/Library/Application\ Support/Dayflow/backups/chunks_backup_YYYY-MM-DD.sqlite \
+       ~/Library/Application\ Support/Dayflow/chunks.sqlite
+    ```
+  </Step>
+  <Step title="Relaunch Dayflow">
+    Open the app and verify your data is restored
+  </Step>
+</Steps>
+
+## Database Optimization
+
+Dayflow uses **WAL (Write-Ahead Logging)** mode for better performance:
+
+<CodeGroup>
+```swift StorageManager.swift:474-482
+var config = Configuration()
+config.maximumReaderCount = 5
+config.prepareDatabase { db in
+    if !db.configuration.readonly {
+        try db.execute(sql: "PRAGMA journal_mode = WAL")
+        try db.execute(sql: "PRAGMA synchronous = NORMAL")
+    }
+    try db.execute(sql: "PRAGMA busy_timeout = 5000")
+}
+```
+</CodeGroup>
+
+### Benefits of WAL Mode
+
+- **Concurrent reads and writes**: Multiple readers don't block writers
+- **Better performance**: Fewer disk syncs required
+- **Crash safety**: Changes are atomic and recoverable
+
+### WAL Checkpoints
+
+Checkpoints merge the WAL file back into the main database:
+
+- **Automatic**: Every 5 minutes via scheduler
+- **On quit**: When app closes gracefully
+- **Size threshold**: When WAL grows too large
+
+This prevents data loss and keeps the database compact.
+
+## Performance Monitoring
+
+Dayflow includes debug tools for monitoring database performance:
+
+<CodeGroup>
+```swift StorageManager.swift:442-501
+private let debugSlowQueries = true
+private let slowThresholdMs: Double = 100  // Log anything over 100ms
+
+#if DEBUG
+try? db.write { db in
+    db.trace { event in
+        if case .profile(let statement, let duration) = event, duration > 0.1 {
+            print("📊 SLOW SQL (\(Int(duration * 1000))ms): \(statement)")
+        }
+    }
+}
+#endif
+```
+</CodeGroup>
+
+In debug builds, slow queries (>100ms) are logged to help identify performance issues.
+
+## Troubleshooting
+
+### Database Corruption
+
+If you see database errors:
+
+1. **Automatic recovery**: Dayflow will attempt to restore from backup
+2. **Manual recovery**: Copy latest backup from `backups/` directory
+3. **Last resort**: Delete database and start fresh (loses all history)
+
+### Storage Not Freeing Up
+
+If storage usage isn't decreasing after purge:
+
+1. **Check WAL files**: The `-wal` and `-shm` files may be holding data temporarily
+2. **Force checkpoint**:
+   ```bash
+   sqlite3 ~/Library/Application\ Support/Dayflow/chunks.sqlite "PRAGMA wal_checkpoint(TRUNCATE);"
+   ```
+3. **Restart Dayflow**: This triggers a full checkpoint
+
+### High Storage Usage
+
+If Dayflow is using more storage than expected:
+
+1. **Check screenshot resolution**: Higher resolution = larger files
+2. **Review capture frequency**: More frequent screenshots = more storage
+3. **Lower storage limit**: Reduce limit in Settings to trigger more aggressive purging
+4. **Manual purge**: Use Settings → Storage → Purge to remove old data

@@ -1,0 +1,113 @@
+---
+title: Development Setup
+description: Set up your development environment to build Dayflow from source
+---
+
+This guide will help you set up your development environment for contributing to Dayflow.
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Xcode 15+** - Download from the [Mac App Store](https://apps.apple.com/us/app/xcode/id497799835)
+- **macOS 13.0+** - Required to build and run Dayflow
+- **Git** - For cloning the repository (included with Xcode Command Line Tools)
+
+<Tip>
+After installing Xcode, run `xcode-select --install` in Terminal to ensure Command Line Tools are installed.
+</Tip>
+
+## Clone the Repository
+
+<Steps>
+  <Step title="Clone Dayflow">
+    Open Terminal and clone the repository:
+    
+    ```bash
+    git clone https://github.com/JerryZLiu/Dayflow.git
+    cd Dayflow
+    ```
+  </Step>
+
+  <Step title="Open the project">
+    Open the Xcode project:
+    
+    ```bash
+    open Dayflow/Dayflow.xcodeproj
+    ```
+    
+    <Info>
+    The project file is located at `Dayflow/Dayflow.xcodeproj` within the repository.
+    </Info>
+  </Step>
+</Steps>
+
+## Understanding the Project Structure
+
+Dayflow's codebase is organized as follows:
+
+```
+Dayflow/
+├─ Dayflow/                 # SwiftUI app sources
+│  ├─ Dayflow/              # Main app code
+│  │  ├─ Timeline UI        # Timeline view and components
+│  │  ├─ Debug UI           # Developer tools and debug views
+│  │  └─ Capture Pipeline   # Screen recording and AI analysis
+│  ├─ DayflowTests/         # Unit tests
+│  └─ DayflowUITests/       # UI tests
+├─ docs/                    # Documentation assets and appcast
+│  ├─ images/               # Screenshots and animations
+│  └─ assets/               # DMG background and other assets
+└─ scripts/                 # Release automation scripts
+   ├─ release.sh            # One-button release workflow
+   ├─ release_dmg.sh        # Build, sign, and notarize DMG
+   └─ update_appcast.sh     # Update Sparkle appcast feed
+```
+
+### Key Directories
+
+- **Dayflow/Dayflow/** - Contains all SwiftUI views, models, and business logic
+- **DayflowTests/** - Unit tests for core functionality
+- **DayflowUITests/** - UI tests for user interface validation
+- **scripts/** - Build automation and release scripts (see [Building](/development/building) for details)
+
+## Running Tests
+
+Dayflow includes both unit tests and UI tests to ensure code quality.
+
+<Steps>
+  <Step title="Run all tests">
+    In Xcode, press `Cmd + U` or select **Product → Test** from the menu.
+  </Step>
+
+  <Step title="Run specific test suites">
+    To run a specific test suite:
+    
+    - **Unit tests only**: Select the `DayflowTests` scheme
+    - **UI tests only**: Select the `DayflowUITests` scheme
+  </Step>
+
+  <Step title="Run from command line">
+    You can also run tests from Terminal:
+    
+    ```bash
+    # Run all tests
+    xcodebuild test -project Dayflow/Dayflow.xcodeproj -scheme Dayflow
+    
+    # Run only unit tests
+    xcodebuild test -project Dayflow/Dayflow.xcodeproj -scheme Dayflow -only-testing:DayflowTests
+    ```
+  </Step>
+</Steps>
+
+<Info>
+Test files include `TimeParsingTests.swift` for unit tests and `DayflowUITests.swift` for UI automation.
+</Info>
+
+## Next Steps
+
+Now that your development environment is set up, you can:
+
+- [Build and debug the app](/development/building)
+- [Learn about contributing](/development/contributing)
+- Review the [README](https://github.com/JerryZLiu/Dayflow/blob/main/README.md) for feature details

@@ -1,0 +1,178 @@
+---
+title: Data Storage
+description: Where Dayflow stores your data and how to manage it
+---
+
+All Dayflow data is stored locally on your Mac. This page explains exactly where your data lives and how to manage it.
+
+## Storage Location
+
+All Dayflow data is stored in a single directory:
+
+```
+~/Library/Application Support/Dayflow/
+```
+
+This is the standard location for macOS application data. You can navigate to it via:
+- **Finder:** Press `Cmd+Shift+G` and paste the path above
+- **Dayflow menu:** Click the Dayflow icon in your menu bar → **Open Recordings**
+
+## Folder Structure
+
+Inside the Dayflow directory, you'll find:
+
+```
+Dayflow/
+├── recordings/           # Video chunks of your screen activity
+│   ├── 2026-03-01/      # Organized by date
+│   ├── 2026-03-02/
+│   └── 2026-03-03/
+└── chunks.sqlite         # Timeline database
+```
+
+### recordings/ Folder
+
+Contains screen recording video files:
+
+- **Format:** Lightweight video chunks (MP4 or similar)
+- **Organization:** Files are organized by date in `YYYY-MM-DD/` subdirectories
+- **Content:** Short segments of your screen activity that are analyzed to generate timeline entries
+- **Size:** Varies based on your screen resolution and activity; managed by automatic cleanup
+
+<Info>
+Recordings are the largest component of Dayflow's storage footprint. Use automatic cleanup to manage disk usage.
+</Info>
+
+### chunks.sqlite Database
+
+Contains timeline metadata and analysis:
+
+- **Format:** SQLite database
+- **Content:** Timeline entries, activity summaries, metadata
+- **Size:** Relatively small compared to recordings
+- **Structure:** Standard SQLite - can be inspected with tools like [DB Browser for SQLite](https://sqlitebrowser.org/)
+
+<Note>
+The database does not contain the raw video data, only metadata and analyzed summaries.
+</Note>
+
+## Automatic Storage Cleanup
+
+Dayflow includes automatic cleanup to prevent unlimited disk usage:
+
+### How It Works
+
+1. **Set a storage limit** in Settings (1GB, 5GB, 10GB, 20GB, or unlimited)
+2. Dayflow monitors total storage usage
+3. When the limit is exceeded, **oldest recordings are deleted first**
+4. Timeline entries remain in the database (only video files are removed)
+
+### Configuring Cleanup
+
+1. Open **Dayflow Settings**
+2. Go to **Storage**
+3. Choose your preferred limit:
+   - **1GB:** ~1-2 days of recordings (ultra-compact)
+   - **5GB:** ~5-7 days of recordings (recommended for most users)
+   - **10GB:** ~2 weeks of recordings
+   - **20GB:** ~1 month of recordings
+   - **Unlimited:** No automatic cleanup (manual management required)
+
+<Warning>
+Storage usage varies based on screen resolution and activity. Higher resolution displays and longer recording sessions consume more space.
+</Warning>
+
+### What Gets Deleted
+
+- **Deleted:** Old video recording files from `recordings/`
+- **Kept:** Timeline entries, summaries, and metadata in `chunks.sqlite`
+
+This means your timeline history remains searchable even after recordings are cleaned up.
+
+## Completely Removing All Data
+
+To fully reset Dayflow and delete all stored data:
+
+### Step-by-Step Instructions
+
+1. **Quit Dayflow**
+   - Click the Dayflow menu bar icon
+   - Select **Quit Dayflow**
+   - Ensure the app is fully closed
+
+2. **Delete the data folder**
+   ```bash
+   rm -rf ~/Library/Application\ Support/Dayflow/
+   ```
+   Or use Finder:
+   - Press `Cmd+Shift+G`
+   - Navigate to `~/Library/Application Support/`
+   - Move the `Dayflow` folder to Trash
+   - Empty Trash
+
+3. **Relaunch Dayflow**
+   - The app will create a fresh `Dayflow/` directory
+   - All previous recordings and timeline data are permanently deleted
+
+<Warning>
+This action is **permanent** and cannot be undone. Make sure you want to delete all timeline data before proceeding.
+</Warning>
+
+## Data Portability
+
+### Exporting Your Timeline
+
+Dayflow supports exporting timeline data:
+
+- **Format:** Markdown
+- **How:** Use the **Export Timeline** feature in the app
+- **Date range:** Choose any date range to export
+- **Use cases:** Backup, sharing, personal archives
+
+### Accessing Raw Data
+
+Since all data is stored locally in standard formats:
+
+- **Video files:** Access directly in `recordings/` - viewable in any video player
+- **Database:** Open `chunks.sqlite` with any SQLite tool
+- **No proprietary formats:** Your data isn't locked into Dayflow
+
+## Privacy Notes
+
+<Info>
+**Cloud storage caution:** If you use iCloud Drive or another cloud sync service, ensure `~/Library/Application Support/` is **not** synced. Dayflow recordings contain sensitive screen content.
+</Info>
+
+- All data remains **on your Mac only**
+- No automatic cloud uploads or backups
+- You control retention through storage limits
+- Full deletion is straightforward and complete
+
+## Disk Space Monitoring
+
+To check current Dayflow storage usage:
+
+```bash
+du -sh ~/Library/Application\ Support/Dayflow/
+```
+
+Or check individual components:
+
+```bash
+# Recordings only
+du -sh ~/Library/Application\ Support/Dayflow/recordings/
+
+# Database only
+du -sh ~/Library/Application\ Support/Dayflow/chunks.sqlite
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Privacy Overview" icon="shield" href="/privacy/overview">
+    Understand Dayflow's privacy architecture
+  </Card>
+  <Card title="AI Providers" icon="brain" href="/privacy/ai-providers">
+    Compare privacy implications of different AI providers
+  </Card>
+</CardGroup>

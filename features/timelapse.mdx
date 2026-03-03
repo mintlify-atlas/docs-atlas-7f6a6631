@@ -1,0 +1,246 @@
+---
+title: Timelapse Playback
+description: Watch visual timelapses of your screen activity to review your day
+icon: film
+---
+
+## Overview
+
+Dayflow's **Timelapse** feature lets you watch a visual playback of your screen activity — a sped-up "movie" of your day. This gives you a different perspective on your timeline beyond text summaries.
+
+<Note>
+  Timelapses are generated **on-demand** from the Timeline UI to avoid background battery drain. They're not created automatically.
+</Note>
+
+## How It Works
+
+### 1. Timelapse Generation
+
+When you click to view a timelapse for a timeline card:
+
+1. Dayflow retrieves all **screenshots** associated with that card
+2. The screenshots are stitched together into a **video file**
+3. The video is saved locally for playback
+
+Timelapses are stored in:
+```
+~/Library/Application Support/Dayflow/timelapses/
+```
+
+### 2. Playback
+
+The timelapse player lets you:
+
+- **Play/pause** the timelapse
+- **Scrub** through the timeline using a slider
+- **Jump** to specific moments
+- **Review** what was visible on screen during that activity
+
+<Info>
+  Timelapse videos are compressed and stored locally — they don't leave your Mac.
+</Info>
+
+---
+
+## Use Cases
+
+<CardGroup cols={2}>
+  <Card title="Verify work done" icon="check">
+    Visually confirm what you were working on during a specific time period
+  </Card>
+  <Card title="Catch context switching" icon="shuffle">
+    See how often you switched between tasks or applications
+  </Card>
+  <Card title="Review research sessions" icon="book-open">
+    Replay what you read or watched during research time
+  </Card>
+  <Card title="Debug timeline cards" icon="bug">
+    If a timeline card seems inaccurate, watch the timelapse to see what the AI saw
+  </Card>
+</CardGroup>
+
+---
+
+## Storage Management
+
+Timelapse videos can accumulate quickly and consume significant disk space.
+
+### Automatic Storage Limits
+
+Dayflow includes **automatic storage cleanup** for timelapses:
+
+- **Configurable limits**: Set storage caps from 1GB to 20GB (or unlimited)
+- **Automatic purging**: Oldest timelapses are deleted when limits are reached
+- **Manual purge**: Force cleanup in **Settings → Storage**
+
+<Warning>
+  Timelapse storage is **separate** from screenshot storage. You can configure different limits for each.
+</Warning>
+
+### How Purging Works
+
+When timelapse storage exceeds your limit:
+
+1. Dayflow sorts timelapses by **creation date** (oldest first)
+2. Deletes timelapses one-by-one until usage is below the limit
+3. Logs which files were deleted (visible in Debug view if enabled)
+
+### Manual Cleanup
+
+To manually delete all timelapses:
+
+1. Quit Dayflow
+2. Delete the folder:
+   ```bash
+   rm -rf ~/Library/Application\ Support/Dayflow/timelapses/
+   ```
+3. Restart Dayflow
+
+Timelapses will be regenerated on-demand as needed.
+
+---
+
+## Storage Configuration
+
+Configure timelapse storage limits in **Settings → Storage → Timelapse Storage**:
+
+| Option | Description |
+|--------|-------------|
+| **1GB** | Minimal storage, ~1-2 days of timelapses |
+| **5GB** | Light usage, ~1 week of timelapses |
+| **10GB** | Moderate usage, ~2 weeks of timelapses |
+| **20GB** | Heavy usage, ~1 month of timelapses |
+| **Unlimited** | No automatic cleanup (use with caution) |
+
+<Tip>
+  Start with **5GB** and adjust based on your usage. You can always increase the limit later.
+</Tip>
+
+---
+
+## Accessing Timelapse Files
+
+### From the App
+
+1. Click the **Dayflow menu bar icon**
+2. Select **Open Recordings Folder**
+3. Navigate to the `timelapses/` subdirectory
+
+### From Finder
+
+1. Open Finder
+2. Press **⌘⇧G** (Go to Folder)
+3. Enter:
+   ```
+   ~/Library/Application Support/Dayflow/timelapses/
+   ```
+4. Press **Enter**
+
+<Info>
+  Timelapse files are standard video files and can be played in QuickTime, VLC, or any video player.
+</Info>
+
+---
+
+## Privacy Considerations
+
+Timelapses are stored **locally** on your Mac:
+
+- **No cloud upload**: Timelapse videos never leave your machine
+- **Sensitive content**: Be cautious when reviewing timelapses — they may contain passwords, private messages, or other sensitive information
+- **Sharing**: If you share a timelapse externally, be aware of what's visible on screen
+
+<Warning>
+  **Security reminder**: Timelapse videos capture everything visible on your screen, including sensitive data. Store them securely and delete when no longer needed.
+</Warning>
+
+---
+
+## Performance Impact
+
+Timelapse generation is **on-demand** to minimize battery impact:
+
+- **No background processing**: Timelapses are only created when you request them
+- **CPU usage**: Moderate during generation (video encoding)
+- **Storage**: Timelapses consume more space than screenshots
+
+<Check>
+  By generating timelapses on-demand, Dayflow avoids unnecessary battery drain from background video processing.
+</Check>
+
+---
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Timelapse playback is choppy">
+    Choppy playback can occur if:
+    
+    1. **Low screenshot frequency**: Fewer screenshots = more "jumpy" playback
+    2. **Missing frames**: Some screenshots may have failed to capture
+    3. **Video encoding**: Try restarting the app and regenerating the timelapse
+    
+    To improve smoothness, ensure screenshot capture is enabled and working correctly.
+  </Accordion>
+
+  <Accordion title="Timelapse won't generate">
+    If timelapse generation fails:
+    
+    1. Check that screenshots exist for that timeline card
+    2. Ensure you have enough disk space
+    3. Verify the `timelapses/` directory exists and is writable
+    4. Check Console.app for error logs (search for "Dayflow")
+  </Accordion>
+
+  <Accordion title="Timelapse files are huge">
+    Timelapses are compressed but can still be large for long sessions. To reduce storage:
+    
+    1. Lower the timelapse storage limit in Settings
+    2. Let automatic purging delete old timelapses
+    3. Manually delete timelapses you no longer need
+  </Accordion>
+
+  <Accordion title="Can I export a timelapse?">
+    Yes! Timelapse files are standard video files stored in:
+    ```
+    ~/Library/Application Support/Dayflow/timelapses/
+    ```
+    
+    You can copy them to another location or share them externally. **Warning**: Be careful not to share sensitive screen content.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Comparison: Timelapse vs. Timeline Cards
+
+| Feature | Timeline Cards | Timelapse |
+|---------|---------------|----------|
+| **Format** | Text summaries | Visual playback |
+| **Generated** | Automatically (background) | On-demand (when requested) |
+| **Storage** | Minimal (~KB per card) | Moderate (~MB per timelapse) |
+| **Privacy** | Sent to AI provider | Stays local |
+| **Best for** | Quick review, context | Visual verification, detailed review |
+
+<Tip>
+  Use **timeline cards** for daily review and **timelapses** when you need to visually verify what you were working on.
+</Tip>
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Timeline" icon="chart-line" href="/features/timeline">
+    Learn about automatic timeline card generation
+  </Card>
+  <Card title="Storage Configuration" icon="hard-drive" href="/configuration/storage">
+    Configure storage limits for screenshots and timelapses
+  </Card>
+  <Card title="Export Timeline" icon="download" href="/features/export">
+    Export timeline as Markdown (text-based alternative)
+  </Card>
+  <Card title="Privacy" icon="shield" href="/privacy/data-storage">
+    Understand where your data is stored
+  </Card>
+</CardGroup>

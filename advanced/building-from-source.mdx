@@ -1,0 +1,372 @@
+---
+title: 'Building from Source'
+description: 'Clone, configure, and build Dayflow from the GitHub repository'
+---
+
+## Why Build from Source?
+
+Building Dayflow from source allows you to:
+
+- **Audit the code**: Inspect how screen recordings and AI processing work
+- **Customize behavior**: Modify capture intervals, deep-link actions, or AI prompts
+- **Contribute**: Fix bugs or add features with pull requests
+- **Maximum privacy**: Verify no data leaves your machine when using local AI
+- **Debug issues**: Run instrumented builds with enhanced logging
+
+## Prerequisites
+
+### System Requirements
+
+- **macOS 13.0+** (Ventura or later)
+- **Xcode 15+** ([Download from Mac App Store](https://apps.apple.com/us/app/xcode/id497799835))
+- **Command Line Tools** (installed automatically with Xcode or via `xcode-select --install`)
+
+### Optional: Gemini API Key
+
+If you plan to use Gemini for AI processing, obtain a free API key:
+
+1. Visit [Google AI Studio](https://ai.google.dev/gemini-api/docs/api-key)
+2. Sign in with your Google account
+3. Click **Get API Key** → **Create API key**
+4. Copy the key (starts with `AIza...`)
+
+For local AI (Ollama/LM Studio) or ChatGPT/Claude CLI, no API key is needed.
+
+## Building Dayflow
+
+<Steps>
+  <Step title="Clone the repository">
+    Open Terminal and clone the Dayflow repository:
+    
+    ```bash
+    git clone https://github.com/JerryZLiu/Dayflow.git
+    cd Dayflow
+    ```
+    
+    This downloads the complete source code to `~/Dayflow`.
+  </Step>
+  
+  <Step title="Open the Xcode project">
+    ```bash
+    open Dayflow.xcodeproj
+    ```
+    
+    Xcode will launch and load the project. Wait for indexing to complete (watch the progress bar in Xcode's toolbar).
+  </Step>
+  
+  <Step title="Configure code signing">
+    In Xcode, select the **Dayflow** target in the project navigator.
+    
+    Go to **Signing & Capabilities** tab.
+    
+    **For local development**:
+    - Set **Team** to your Apple ID or "None" (for unsigned local builds)
+    - Xcode will auto-generate a provisioning profile
+    
+    **For distribution**:
+    - Use a paid Apple Developer account
+    - Enable **Hardened Runtime** and **Notarization** for public release
+    
+    <Note>
+    Unsigned builds work fine locally but will trigger Gatekeeper warnings if shared with others.
+    </Note>
+  </Step>
+  
+  <Step title="Add GEMINI_API_KEY environment variable (optional)">
+    If using Gemini, add your API key to the run scheme:
+    
+    1. In Xcode, click the scheme selector ("Dayflow" near the top toolbar) → **Edit Scheme...**
+    2. Select **Run** in the left sidebar
+    3. Go to the **Arguments** tab
+    4. Under **Environment Variables**, click **+** to add:
+       - **Name**: `GEMINI_API_KEY`  
+       - **Value**: `AIzaSy...` (your actual API key)
+    
+    From README.md:177:
+    > In your Run **scheme**, add your `GEMINI_API_KEY` under _Arguments > Environment Variables_ (if using Gemini).
+    
+    <Warning>
+    Never commit your API key to version control. The `.gitignore` excludes scheme files by default.
+    </Warning>
+  </Step>
+  
+  <Step title="Build and run">
+    Press **Cmd+R** or click the **Run** button (▶) in Xcode.
+    
+    Xcode will:
+    1. Compile Swift source files
+    2. Link frameworks (SwiftUI, ScreenCaptureKit, etc.)
+    3. Bundle resources (fonts, images)
+    4. Launch Dayflow in debug mode
+    
+    **First launch will prompt for Screen Recording permission.**
+  </Step>
+</Steps>
+
+## Granting Permissions
+
+When you run Dayflow for the first time, macOS will prompt for screen recording access.
+
+<Steps>
+  <Step title="Grant Screen Recording permission">
+    When prompted, click **Open System Settings**.
+    
+    In **Privacy & Security → Screen & System Audio Recording**, enable the Dayflow checkbox.
+  </Step>
+  
+  <Step title="Restart Dayflow">
+    Quit Dayflow completely and re-run from Xcode (Cmd+R).
+    
+    From `ScreenRecordingPermissionView.swift:183-189`, permissions require a full app restart:
+    
+    ```swift
+    if CGPreflightScreenCaptureAccess() {
+        permissionState = .granted
+        Task { @MainActor in AppDelegate.allowTermination = false }
+    }
+    ```
+  </Step>
+</Steps>
+
+## Build Configuration
+
+### Debug vs. Release
+
+**Debug** (default for Xcode Run):
+- Enhanced logging (SQL query profiling, LLM call traces)
+- Slower performance due to optimizations disabled
+- Easier to debug with breakpoints and inspectors
+
+**Release** (for Archive/Distribution):
+- Optimized for performance
+- Minimal logging
+- Smaller binary size
+
+To switch:
+
+1. **Edit Scheme...** → **Run** → **Build Configuration**
+2. Select **Debug** or **Release**
+
+### Debug-Only Features
+
+From `StorageManager.swift:493-501`, debug builds enable SQL profiling:
+
+```swift
+#if DEBUG
+try? db.write { db in
+    db.trace { event in
+        if case .profile(let statement, let duration) = event, duration > 0.1 {
+            print("📊 SLOW SQL (\(Int(duration * 1000))ms): \(statement)")
+        }
+    }
+}
+#endif
+```
+
+This logs all database queries taking >100ms to Console.app.
+
+## Project Structure
+
+From README.md:304-311:
+
+```
+Dayflow/
+├─ Dayflow/                 # SwiftUI app sources
+│  ├─ App/                  # App lifecycle, deep-link routing
+│  ├─ Core/                 # Recording, storage, AI services
+│  ├─ Views/                # UI components, timeline, settings
+│  └─ Utilities/            # Helpers, formatters, migrations
+├─ docs/                    # Documentation assets, screenshots
+├─ scripts/                 # Release automation (DMG, notarization)
+```
+
+Key files:
+
+- `Dayflow/App/AppDeepLinkRouter.swift` - URL scheme handling
+- `Dayflow/Core/Recording/StorageManager.swift` - Database and file management
+- `Dayflow/Core/AI/GeminiService.swift` - Gemini API integration
+- `Dayflow/Views/Timeline/TimelineView.swift` - Main timeline UI
+
+## Common Build Issues
+
+### "No signing certificate found"
+
+**Solution**: In **Signing & Capabilities**, set **Team** to your Apple ID or "Sign to Run Locally" (Xcode 14+).
+
+### "ScreenCaptureKit not available"
+
+**Solution**: Ensure deployment target is macOS 13.0+. Check **Dayflow** target → **General** → **Minimum Deployments**.
+
+### "Cannot find 'GRDB' in scope"
+
+**Solution**: Xcode may need to resolve Swift Package Manager dependencies:
+
+```bash
+xcodebuild -resolvePackageDependencies
+```
+
+Or in Xcode: **File → Packages → Resolve Package Versions**.
+
+### Build succeeds but app crashes on launch
+
+**Solution**: Check Console.app for crash logs. Common causes:
+
+- Missing `Info.plist` keys (screen recording usage description)
+- Corrupted database (delete `~/Library/Application Support/Dayflow/chunks.sqlite` and rebuild)
+
+## Modifying the Source
+
+### Example: Change Recording Interval
+
+By default, Dayflow captures in 60-second chunks. To change:
+
+1. Open `Dayflow/Core/Recording/ScreenRecorder.swift`
+2. Find the chunk duration constant (search for `60`)
+3. Modify the value:
+   ```swift
+   private let chunkDuration: TimeInterval = 120 // 2-minute chunks
+   ```
+4. Rebuild (Cmd+B) and run
+
+### Example: Add Custom Deep-Link Action
+
+To add a new URL action (e.g., `dayflow://open-settings`):
+
+1. Open `AppDeepLinkRouter.swift:10-24`
+2. Add new case to `Action` enum:
+   ```swift
+   enum Action: String {
+       case startRecording = "start-recording"
+       case stopRecording = "stop-recording"
+       case openSettings = "open-settings"  // New action
+   }
+   ```
+3. Update `init?(identifier:)` to handle the new action
+4. Implement in `perform(_ action:)`:
+   ```swift
+   case .openSettings:
+       openSettings()
+   ```
+5. Add the handler method and rebuild
+
+### Example: Customize AI Prompts
+
+AI prompts are defined in service files like `GeminiService.swift`. To modify:
+
+1. Search for prompt strings (look for `systemInstruction` or prompt constants)
+2. Edit the prompt text
+3. Rebuild and test with a small batch
+
+<Warning>
+Changing prompts may degrade timeline quality. Test thoroughly before relying on modified prompts.
+</Warning>
+
+## Running Tests
+
+Dayflow includes unit tests for core functionality:
+
+```bash
+# Run all tests from command line
+xcodebuild test -scheme Dayflow -destination 'platform=macOS'
+
+# Or in Xcode: Cmd+U
+```
+
+Tests cover:
+- Date/time calculations (4 AM boundary logic)
+- Database migrations
+- URL scheme routing
+- Storage management
+
+## Creating a Distribution Build
+
+To create a `.dmg` for sharing:
+
+<Steps>
+  <Step title="Archive the app">
+    In Xcode: **Product → Archive**
+    
+    Wait for the build to complete (may take several minutes).
+  </Step>
+  
+  <Step title="Export for distribution">
+    When Organizer opens, select the archive → **Distribute App**
+    
+    Choose **Direct Distribution** (for personal use) or **Developer ID** (for public release).
+  </Step>
+  
+  <Step title="Notarize (optional but recommended)">
+    For public distribution, enable notarization to avoid Gatekeeper warnings.
+    
+    Requires a paid Apple Developer account ($99/year).
+    
+    Xcode will upload to Apple's notary service and staple the ticket automatically.
+  </Step>
+  
+  <Step title="Create DMG (optional)">
+    Dayflow includes release scripts in `scripts/` for automated DMG creation.
+    
+    See `scripts/release.sh` for one-button release automation.
+  </Step>
+</Steps>
+
+## Staying Updated
+
+To pull the latest changes from the repository:
+
+```bash
+cd ~/Dayflow
+git fetch origin
+git pull origin main
+```
+
+Then rebuild in Xcode.
+
+### Handling Merge Conflicts
+
+If you've modified files locally:
+
+```bash
+# Stash your changes
+git stash
+
+# Pull updates
+git pull origin main
+
+# Re-apply your changes
+git stash pop
+```
+
+Resolve any conflicts in Xcode, then rebuild.
+
+## Contributing
+
+From README.md:332-334:
+
+> PRs welcome! If you plan a larger change, please open an issue first to discuss scope and approach.
+
+Workflow:
+
+1. Fork the repository on GitHub
+2. Create a feature branch: `git checkout -b feature/my-improvement`
+3. Make changes and commit: `git commit -m "Add feature X"`
+4. Push to your fork: `git push origin feature/my-improvement`
+5. Open a Pull Request on GitHub
+
+## Getting Help
+
+If you encounter build issues:
+
+1. Search [GitHub Issues](https://github.com/JerryZLiu/Dayflow/issues) for similar problems
+2. Check Xcode's **Report Navigator** (Cmd+9) for detailed error logs
+3. Try cleaning the build folder: **Product → Clean Build Folder** (Cmd+Shift+K)
+4. If stuck, open a new issue with:
+   - Xcode version
+   - macOS version
+   - Complete error output
+   - Steps to reproduce
+
+## Related Documentation
+
+- [Debugging & Developer Tools](/advanced/debugging) - Inspect app behavior in debug builds
+- [URL Scheme Automation](/advanced/url-scheme) - Test deep-link modifications

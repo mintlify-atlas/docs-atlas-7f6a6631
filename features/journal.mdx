@@ -1,0 +1,271 @@
+---
+title: Daily Journal (BETA)
+description: Set morning intentions, reflect on your evening, and get AI-generated summaries of your day
+icon: book
+---
+
+<Warning>
+  **Beta Feature**: Journal is currently in limited beta and requires an **access code** to unlock. Enter your access code in the app to enable this feature.
+</Warning>
+
+## Overview
+
+Dayflow's Journal feature helps you stay intentional about your days by combining **manual reflection** with **AI-generated insights** from your timeline. It's designed to be quick, lightweight, and integrated with your automatic timeline tracking.
+
+## How It Works
+
+### Morning: Set Intentions
+
+Start your day by setting intentions — what you want to accomplish and focus on.
+
+**Intentions form includes:**
+
+- **Today's intentions** (list): 2-5 key tasks or goals for the day
+- **Notes for the day** (optional): Context, reminders, or thoughts
+- **Long-term goals** (optional): Bigger-picture goals you're working toward
+
+Intentions are saved locally and can be edited throughout the day.
+
+<Tip>
+  Goals are pre-filled from your most recent entry to help you maintain consistency across days.
+</Tip>
+
+### Evening: Reflect
+
+At the end of your day (after 4 PM), Dayflow prompts you to reflect:
+
+**Reflections form includes:**
+
+- **Evening reflections** (freeform): How did the day go? What went well? What could improve?
+
+Reflections are optional — you can skip them if you prefer to just review the AI summary.
+
+### AI Summary Generation
+
+Once you've set intentions or reflections (or both), Dayflow can generate an **AI-powered summary** of your day that combines:
+
+- **Timeline activity**: What you actually did (from automatic tracking)
+- **Your intentions**: What you planned to do
+- **Your reflections**: How you felt about the day
+- **Recent summaries**: Context from previous days to ensure variety
+
+The summary includes:
+
+- **Wins**: 2-3 key accomplishments
+- **Narrative**: 3-5 sentence arc of your day (morning, afternoon, evening)
+- **To improve**: 1 honest observation about what could've gone better
+
+<Info>
+  Summaries require at least **1 hour of timeline activity** to generate. If you don't have enough activity tracked, the summary button will be disabled.
+</Info>
+
+### Weekly View
+
+The Journal includes a **weekly calendar view** where you can:
+
+- See which days have journal entries
+- Navigate between days quickly
+- Spot patterns in your week (days with reflections vs. days without)
+
+---
+
+## Journal Flow States
+
+The Journal UI adapts based on the time of day and what you've already completed:
+
+| State | When It Appears | What You See |
+|-------|----------------|-------------|
+| **Intro** | First visit, no entry yet | CTA to set intentions |
+| **Summary** | Morning, after recent activity | Yesterday's summary + CTA to set today's intentions |
+| **Intentions Edit** | Clicking "Set intentions" | Form to enter intentions, notes, goals |
+| **Reflection Prompt** | Evening (after 4 PM), intentions set | Prompt to add reflections |
+| **Reflection Edit** | Clicking "Add reflections" | Form to enter evening reflections |
+| **Board Complete** | Summary generated | Full day view with all sections + AI summary |
+
+<Tabs>
+  <Tab title="Morning">
+    **Typical morning flow:**
+    
+    1. Open Journal → see yesterday's summary (if available)
+    2. Click "Set today's intentions"
+    3. Enter your intentions and goals
+    4. Save → return to timeline
+  </Tab>
+  
+  <Tab title="Evening">
+    **Typical evening flow:**
+    
+    1. Open Journal → prompted to reflect
+    2. Enter reflections (or skip)
+    3. Click "Generate summary"
+    4. AI creates a summary combining timeline + journal data
+    5. Review your complete day
+  </Tab>
+</Tabs>
+
+---
+
+## 4AM Boundary
+
+Journal uses the same **4AM boundary** as the timeline — meaning your "day" runs from 4AM to 3:59AM the next morning. This ensures late-night work sessions are grouped with the correct logical day.
+
+Example:
+- Work until 2 AM on Tuesday night → counts as Monday's timeline
+- Wake up at 8 AM Tuesday → counts as Tuesday's timeline
+
+---
+
+## AI Summary Details
+
+### Summary Format
+
+```markdown
+**Wins:** Shipped the journal feature I set out to finish. Made real progress on video animations.
+
+The morning didn't have much direction—some scrolling, flight searches, a League video. Things clicked mid-afternoon when I got into **Swift animation work**, dialing in spring curves and reverse logic. Evening was a mix: Japan trip planning with friends, Duke interview prep, then back to **timeline card specs**. Ended the night playing with Opus 4.5.
+
+**To improve:** Morning had too much drift. Would've felt better to batch distractions and start focused.
+```
+
+### Summary Prompt
+
+Dayflow builds a detailed prompt that includes:
+
+- **Timeline activity**: All timeline cards for the day
+- **Morning intentions**: What you planned
+- **Notes for the day**: Additional context
+- **Long-term goals**: Bigger-picture context
+- **Evening reflections**: Your self-assessment
+- **Recent summaries**: Previous days' summaries to ensure stylistic variety
+
+The AI is instructed to:
+- Write in **first person** (from your perspective)
+- Be **warm and reflective**, not robotic
+- Use **varied sentence structure** and avoid repetitive openers
+- Include **1-3 bolded phrases** to highlight key activities
+- **Not infer emotions** unless you explicitly stated them
+
+<Info>
+  Recent summaries are included to prevent the AI from reusing the same phrases or sentence structures — keeping your journal fresh.
+</Info>
+
+---
+
+## Scheduled Reminders
+
+Dayflow can send **notifications** to remind you to:
+
+- Set intentions in the morning
+- Add reflections in the evening
+
+Configure reminders in **Settings → Notifications**.
+
+<Note>
+  Reminders are local notifications — no external services are used.
+</Note>
+
+---
+
+## Privacy & Data Storage
+
+All journal data is stored locally in your Dayflow database:
+
+- **Location**: `~/Library/Application Support/Dayflow/chunks.sqlite`
+- **No cloud sync**: Journal entries never leave your Mac unless you export them
+- **AI processing**: Summaries are generated using your configured AI provider (Gemini, Local, or ChatGPT/Claude)
+
+<Check>
+  Journal entries are **never** sent to analytics. Only metadata (character counts, not content) is tracked.
+</Check>
+
+---
+
+## Beta Access
+
+The Journal feature is currently in **limited beta** and requires an access code.
+
+**How to get access:**
+
+1. Request an access code from the Dayflow team
+2. Open Dayflow → **Settings → Journal**
+3. Enter your access code
+4. The Journal tab will appear in the main UI
+
+<Info>
+  Beta access helps us refine the feature before a wider release. Feedback is welcome!
+</Info>
+
+---
+
+## Use Cases
+
+<AccordionGroup>
+  <Accordion title="Daily standup preparation">
+    Generate a summary at the end of the day, copy it, and use it as your standup update the next morning.
+  </Accordion>
+
+  <Accordion title="Weekly reviews">
+    Use the weekly view to review patterns:
+    - Which days did you hit your intentions?
+    - When did you feel most productive?
+    - What themes emerge across the week?
+  </Accordion>
+
+  <Accordion title="Personal accountability">
+    Set intentions in the morning, then reflect in the evening on whether you followed through. The AI summary provides objective data on what you actually did.
+  </Accordion>
+
+  <Accordion title="Building better routines">
+    Track long-term goals across weeks. The goals field pre-fills from your most recent entry, making it easy to maintain consistency.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="'Generate summary' button is disabled">
+    The summary button requires at least **1 hour of timeline activity** for the day. Ensure:
+    
+    1. Recording is enabled
+    2. You have at least 1 hour of captured activity
+    3. Timeline cards have been generated (check the Timeline view)
+  </Accordion>
+
+  <Accordion title="Summary generation failed">
+    If summary generation fails:
+    
+    1. Check your AI provider configuration in **Settings → AI Provider**
+    2. Verify your API key or CLI tool is working
+    3. Ensure you have internet connectivity (for Gemini or ChatGPT/Claude)
+    4. Try again — transient API errors can occur
+  </Accordion>
+
+  <Accordion title="Goals aren't pre-filling">
+    Goals are pre-filled from your **most recent journal entry**. If you don't have a previous entry, the field will be empty.
+  </Accordion>
+
+  <Accordion title="Journal tab doesn't appear">
+    The Journal feature requires a **beta access code**. Enter your code in **Settings → Journal** to unlock the feature.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Timeline" icon="chart-line" href="/features/timeline">
+    Learn how automatic timeline tracking works
+  </Card>
+  <Card title="AI Providers" icon="brain" href="/features/ai-providers">
+    Choose the right AI provider for summaries
+  </Card>
+  <Card title="Export" icon="download" href="/features/export">
+    Export journal entries and timeline as Markdown
+  </Card>
+  <Card title="Privacy" icon="shield" href="/privacy/overview">
+    Understand how your data is handled
+  </Card>
+</CardGroup>

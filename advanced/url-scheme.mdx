@@ -1,0 +1,239 @@
+---
+title: 'URL Scheme Automation'
+description: 'Deep-link automation with dayflow:// URLs for Shortcuts, scripts, and hotkey launchers'
+---
+
+## Overview
+
+Dayflow registers a `dayflow://` URL scheme to enable external automation of recording controls. You can trigger start/stop actions from macOS Shortcuts, AppleScript, hotkey launchers, or any tool that can open URLs.
+
+## Supported URLs
+
+Dayflow supports two primary deep-link actions:
+
+```bash
+dayflow://start-recording
+dayflow://stop-recording
+```
+
+### URL Aliases
+
+The URL router accepts multiple variants for each action:
+
+- **Start recording**: `start-recording`, `start`, `resume`
+- **Stop recording**: `stop-recording`, `stop`, `pause`
+
+All aliases are case-insensitive and functionally identical.
+
+### URL Structure
+
+The deep-link router accepts actions via:
+
+1. **Host component**: `dayflow://start-recording`
+2. **Path component**: `dayflow:///start-recording`
+3. **Query parameter**: `dayflow://?action=start-recording`
+
+All three formats are supported and will work identically.
+
+## Testing from Terminal
+
+You can test URL scheme automation directly from the command line:
+
+```bash
+# Start recording
+open dayflow://start-recording
+
+# Stop recording  
+open dayflow://stop-recording
+```
+
+The `open` command tells macOS to handle the URL, which launches or activates Dayflow and triggers the action.
+
+## Integration Examples
+
+### macOS Shortcuts
+
+<Steps>
+  <Step title="Create a new Shortcut">
+    Open the Shortcuts app and create a new shortcut.
+  </Step>
+  
+  <Step title="Add 'Open URLs' action">
+    Search for and add the **Open URLs** action.
+  </Step>
+  
+  <Step title="Enter the Dayflow URL">
+    Enter `dayflow://start-recording` or `dayflow://stop-recording` in the URL field.
+  </Step>
+  
+  <Step title="Optional: Add to Menu Bar">
+    Right-click the shortcut and select **Add to Menu Bar** for quick access.
+  </Step>
+</Steps>
+
+**Example: Toggle Recording**
+
+Create two shortcuts:
+- "Start Dayflow" → `dayflow://start-recording`
+- "Stop Dayflow" → `dayflow://stop-recording`
+
+Assign keyboard shortcuts in Shortcuts preferences for hands-free control.
+
+### AppleScript
+
+Control Dayflow recording from AppleScript:
+
+```applescript
+-- Start recording
+tell application "System Events"
+    open location "dayflow://start-recording"
+end tell
+
+-- Stop recording
+tell application "System Events"
+    open location "dayflow://stop-recording"
+end tell
+```
+
+### Raycast Script Commands
+
+Create a Raycast script command for quick recording control:
+
+```bash
+#!/bin/bash
+
+# Required parameters:
+# @raycast.schemaVersion 1
+# @raycast.title Start Dayflow Recording
+# @raycast.mode silent
+
+open "dayflow://start-recording"
+```
+
+Save as `start-dayflow.sh` in your Raycast script commands folder.
+
+### Alfred Workflows
+
+Create an Alfred workflow with a keyword trigger:
+
+1. Create a new workflow
+2. Add a **Keyword** input (e.g., `dfstart`)
+3. Connect to an **Open URL** action
+4. Set URL to `dayflow://start-recording`
+
+### BetterTouchTool
+
+Map a keyboard shortcut or Touch Bar button:
+
+1. Add a new trigger (keyboard shortcut, gesture, etc.)
+2. Set action to **Open URL / Open Application**
+3. Enter `dayflow://start-recording`
+
+## Implementation Details
+
+Deep-link handling is implemented in `AppDeepLinkRouter.swift:9-97`. Key behaviors:
+
+### Idempotent Operations
+
+Actions are safe to call repeatedly:
+
+- `start-recording` when already recording → no-op (logged and ignored)
+- `stop-recording` when already stopped → no-op (logged and ignored)
+
+This prevents unintended state changes from duplicate triggers.
+
+### Analytics Tracking
+
+Deep-link-triggered recording changes are tracked with `reason: "deeplink"` in analytics. This distinguishes automated toggles from manual UI interactions.
+
+From `AppDeepLinkRouter.swift:84`:
+
+```swift
+delegate?.prepareForRecordingToggle(reason: "deeplink")
+```
+
+### Error Handling
+
+Unsupported URLs are logged and ignored:
+
+```swift
+guard let action = resolveAction(from: url) else {
+    print("[DeepLink] Unsupported URL: \(url.absoluteString)")
+    return false
+}
+```
+
+Check Console.app and filter for `DeepLink` to debug URL routing issues.
+
+## URL Scheme Registration
+
+The `dayflow://` scheme is registered in `Info.plist:9-19`:
+
+```xml
+<key>CFBundleURLTypes</key>
+<array>
+  <dict>
+    <key>CFBundleURLName</key>
+    <string>teleportlabs.com.Dayflow</string>
+    <key>CFBundleURLSchemes</key>
+    <array>
+      <string>dayflow</string>
+    </array>
+  </dict>
+</array>
+```
+
+This registers the scheme system-wide when Dayflow is installed.
+
+## Troubleshooting
+
+### URL Not Opening Dayflow
+
+1. Verify Dayflow is installed in `/Applications`
+2. Try launching Dayflow manually once to register the URL handler
+3. Restart macOS if the scheme isn't recognized
+
+### Action Not Triggering
+
+Check Console.app for deep-link logs:
+
+```bash
+# Filter Console.app for Dayflow deep-link messages
+log stream --predicate 'processImagePath contains "Dayflow"' --level debug | grep DeepLink
+```
+
+You should see output like:
+
+```
+[DeepLink] Unsupported URL: dayflow://invalid
+```
+
+or successful execution (no error logged).
+
+### Permission Issues
+
+If deep links fail after macOS updates:
+
+1. Go to **System Settings → Privacy & Security → Automation**
+2. Ensure Shortcuts/Alfred/Raycast can control Dayflow
+3. Re-grant permissions if prompted
+
+## Security Considerations
+
+Deep links execute without user confirmation. Ensure:
+
+- Only trusted automation tools have permission to trigger URLs
+- Review which apps can control Dayflow in System Settings → Automation
+- Be cautious running untrusted scripts that may call `open dayflow://`
+
+## Best Practices
+
+1. **Combine with Shortcuts automation**: Trigger recording at specific times or when opening certain apps
+2. **Use with Focus modes**: Stop recording when entering Do Not Disturb
+3. **Pair with screen locks**: Start recording on unlock, stop on lock
+4. **Create toggle shortcuts**: Check recording state and flip it (requires scripting AppState)
+
+## Related Documentation
+
+- [Building from Source](/advanced/building-from-source) - Modify deep-link behavior
+- [Debugging](/advanced/debugging) - View deep-link logs and analytics

@@ -1,0 +1,267 @@
+---
+title: AI Provider Privacy
+description: Privacy implications of different AI providers in Dayflow
+---
+
+Dayflow lets you choose your AI provider, and each has different privacy implications. This page helps you understand what data leaves your Mac with each option.
+
+## Privacy Comparison
+
+<CardGroup cols={3}>
+  <Card title="Local Models" icon="laptop" color="#4caf50">
+    **Fully private** - Nothing leaves your Mac
+  </Card>
+  <Card title="Gemini" icon="cloud" color="#ff9800">
+    **Cloud processing** - Configure data retention
+  </Card>
+  <Card title="ChatGPT / Claude" icon="robot" color="#1976d2">
+    **Third-party processing** - Review their policies
+  </Card>
+</CardGroup>
+
+## Provider Details
+
+### Local Models (Ollama / LM Studio)
+
+**Privacy level:** Highest
+
+#### What Stays on Your Mac
+- **Everything:** All processing happens locally
+- Screen recordings never leave your machine
+- AI models run entirely on-device
+- No internet connection required for processing
+
+#### Privacy Benefits
+- **Zero cloud exposure:** Your screen data never touches external servers
+- **Offline capable:** Works without internet (after models are downloaded)
+- **Full control:** Inspect models, control when they run
+
+#### Trade-offs
+- **Quality:** Local models may underperform cloud models on complex summarization
+- **Speed:** Slower than cloud-based processing, especially on older Macs
+- **Battery:** GPU-intensive processing drains battery faster (recommend plugged-in use)
+- **Setup:** Requires installing and configuring Ollama or LM Studio
+
+<Info>
+**Recommended for:** Users who prioritize maximum privacy and don't mind trade-offs in quality/speed.
+</Info>
+
+#### References
+- [LM Studio offline documentation](https://lmstudio.ai/docs/app/offline)
+- [Ollama GPU acceleration](https://github.com/ollama/ollama/blob/main/docs/gpu.md)
+
+---
+
+### Gemini (Google AI)
+
+**Privacy level:** Configurable
+
+#### What Leaves Your Mac
+- **Screen recording chunks:** Uploaded to Google's Gemini API for analysis
+- **Batch payloads:** Sent periodically during timeline generation
+- **No persistent storage by Dayflow:** Data is sent for processing only
+
+#### Data Handling: Paid vs. Unpaid Services
+
+Google's data handling depends on whether you've enabled **Cloud Billing**:
+
+<Tabs>
+  <Tab title="With Cloud Billing (Recommended)">
+    #### Paid Services Data Handling
+
+    When you enable Cloud Billing on **at least one** Gemini API project:
+
+    <Info>
+    **All of your Gemini API and Google AI Studio usage** is treated under **"Paid Services"** rules - **even when using free quota**.
+    </Info>
+
+    **What this means:**
+    - Google **does not use your prompts/responses to improve Google products or models**
+    - Your data is **not used for training**
+    - Applies to **all Gemini API calls**, not just billed ones
+
+    **Important nuances:**
+    - **AI Studio remains free to use** - enabling billing only changes data handling, not pricing
+    - **Abuse monitoring:** Google logs prompts/responses for a **limited period** for policy enforcement and legal compliance
+    - **Verification:** In AI Studio → API keys, you should see "Plan: Paid" once billing is enabled
+
+    <Note>
+    From [Gemini API Additional Terms](https://ai.google.dev/gemini-api/terms#paid-services-how-google-uses-your-data):
+    
+    "When you activate a Cloud Billing account, all use of Gemini API and Google AI Studio is a 'Paid Service' with respect to how Google Uses Your Data, even when using Services that are offered free of charge."
+    </Note>
+  </Tab>
+
+  <Tab title="Without Cloud Billing">
+    #### Unpaid Services Data Handling
+
+    Without Cloud Billing enabled:
+
+    <Warning>
+    Google **may use your prompts and responses** to improve Google products and services, including training models.
+    </Warning>
+
+    **Exception: EEA / UK / Switzerland users**
+
+    <Info>
+    If you're in the **European Economic Area, UK, or Switzerland**, the **Paid Services data handling applies by default** - even without enabling billing.
+    </Info>
+
+    This means:
+    - Your data is **not used for training** (even on free tier)
+    - Same privacy protections as Paid Services
+    - No billing configuration required
+
+    <Note>
+    From [Gemini API Additional Terms](https://ai.google.dev/gemini-api/terms#unpaid-services-how-google-uses-your-data):
+    
+    "For users in the European Economic Area, Switzerland, and the United Kingdom, the Paid Services data handling described above applies to all Services (including AI Studio and free Services)."
+    </Note>
+  </Tab>
+</Tabs>
+
+#### How to Enable Cloud Billing
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Select (or create) a project
+3. Navigate to **Billing**
+4. **Enable billing** for the project (you won't be charged unless you exceed free tier limits)
+5. Verify in [AI Studio](https://aistudio.google.com/) that your plan shows as "Paid"
+
+<Info>
+You can enable billing on **one project** and continue using API keys from any project - the data handling applies account-wide once any billing is activated.
+</Info>
+
+#### Trade-offs
+- **Quality:** Excellent - native video understanding for direct analysis
+- **Speed:** Fast - only 2 LLM calls per recording chunk
+- **Efficiency:** Most efficient provider (fewest API calls)
+- **Privacy:** Depends on billing configuration (see above)
+
+<Warning>
+**Important:** This is our interpretation of Google's Terms of Service, not legal advice. Review the [full terms](https://ai.google.dev/gemini-api/terms) yourself.
+</Warning>
+
+---
+
+### ChatGPT / Claude (CLI-based)
+
+**Privacy level:** Third-party processing
+
+#### What Leaves Your Mac
+- **Screen recording chunks:** Processed by OpenAI (ChatGPT) or Anthropic (Claude)
+- **Extracted frames:** Sent via CLI tools that communicate with cloud APIs
+- **Batch processing:** Frames extracted every 60s, sent in batches
+
+#### Data Handling
+
+Your data is processed by third-party AI providers:
+
+<Tabs>
+  <Tab title="ChatGPT (OpenAI)">
+    **Provider:** OpenAI
+
+    **How it works:**
+    - Dayflow uses the [Codex CLI](https://github.com/openai/codex) to send frames to OpenAI
+    - Requires **ChatGPT Plus** ($20/month) or **ChatGPT Pro** subscription
+    - CLI authenticates through your existing ChatGPT account
+
+    **Privacy policy:**
+    - Review [OpenAI's Privacy Policy](https://openai.com/policies/privacy-policy)
+    - Enterprise users: Consider [ChatGPT Enterprise](https://openai.com/chatgpt/enterprise) for enhanced data controls
+
+    **Data usage:**
+    - OpenAI's policy governs how your data is used
+    - As of 2024, OpenAI states they don't train on ChatGPT Plus/Pro user data by default
+    - Verify current terms on OpenAI's website
+  </Tab>
+
+  <Tab title="Claude (Anthropic)">
+    **Provider:** Anthropic
+
+    **How it works:**
+    - Dayflow uses [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI to send frames to Anthropic
+    - Requires **Claude Pro** subscription ($20/month)
+    - CLI authenticates through your existing Claude account
+
+    **Privacy policy:**
+    - Review [Anthropic's Privacy Policy](https://www.anthropic.com/privacy)
+    - Anthropic's Commercial Terms may apply depending on your use
+
+    **Data usage:**
+    - Anthropic's policy governs how your data is used
+    - Review their current data retention and training policies
+  </Tab>
+</Tabs>
+
+#### Trade-offs
+- **Quality:** Highest - frontier reasoning models provide best-in-class narratives
+- **Speed:** Good - 4-6 LLM calls per recording chunk
+- **Cost:** Requires **paid subscription** ($20/month)
+- **Setup:** Requires CLI installation and staying signed in
+- **Internet:** Requires active internet connection (no offline mode)
+
+<Warning>
+When using ChatGPT or Claude, you're subject to **their privacy policies**, not just Dayflow's. Review their terms carefully.
+</Warning>
+
+---
+
+## Quick Comparison Table
+
+| Feature | Local Models | Gemini | ChatGPT / Claude |
+|---------|-------------|--------|------------------|
+| **Data leaves Mac** | No | Yes | Yes |
+| **Cloud processing** | No | Yes | Yes |
+| **Training on your data** | N/A | No (with billing) | Check provider policy |
+| **Offline capable** | Yes (after model download) | No | No |
+| **Internet required** | Only for model downloads | Yes | Yes |
+| **Cost** | Free (after hardware) | API costs (free tier available) | $20/month subscription |
+| **Quality** | Good | Excellent | Highest |
+| **Speed** | Slower | Fast | Good |
+| **Battery impact** | High (GPU-intensive) | Low | Low |
+| **Setup complexity** | Medium | Easy | Medium |
+| **LLM calls per chunk** | 33+ | 2 | 4-6 |
+
+## Choosing the Right Provider
+
+### Choose **Local Models** if:
+- Privacy is your top priority
+- You work with highly sensitive information
+- You want offline capability
+- You don't mind slower processing and lower quality
+- You have a Mac with sufficient GPU power
+
+### Choose **Gemini** if:
+- You want the best balance of quality, speed, and cost
+- You're comfortable with Google's data handling (especially with billing enabled)
+- You want the most efficient processing (fewest API calls)
+- You're in EEA/UK/Switzerland (automatic Paid Services treatment)
+
+### Choose **ChatGPT / Claude** if:
+- You want the absolute highest quality narratives
+- You already have a ChatGPT Plus/Pro or Claude Pro subscription
+- You trust OpenAI's or Anthropic's data handling
+- You need best-in-class summarization quality
+
+## Switching Providers
+
+You can change AI providers at any time:
+
+1. Open **Dayflow Settings**
+2. Go to **AI Provider**
+3. Select your preferred provider
+4. Configure API keys or CLI tools as needed
+
+Previous timeline data remains intact - only future processing uses the new provider.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Privacy Overview" icon="shield" href="/privacy/overview">
+    Understand Dayflow's privacy architecture
+  </Card>
+  <Card title="Data Storage" icon="database" href="/privacy/data-storage">
+    Learn where your data is stored locally
+  </Card>
+</CardGroup>

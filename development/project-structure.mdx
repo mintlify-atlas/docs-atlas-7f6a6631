@@ -1,0 +1,397 @@
+---
+title: Project Structure
+description: Detailed organization of the Dayflow codebase
+---
+
+# Project Structure
+
+This page documents the organization of the Dayflow codebase and explains the purpose of each directory and key files.
+
+## Repository Layout
+
+```
+Dayflow/
+├── Dayflow/                    # Main application sources
+│   ├── App/                    # App lifecycle and state management
+│   ├── Core/                   # Core services and business logic
+│   ├── Views/                  # SwiftUI views and UI components
+│   ├── Models/                 # Data models and types
+│   ├── Menu/                   # Menu bar interface
+│   ├── System/                 # System integrations
+│   ├── Utilities/              # Helper functions and extensions
+│   ├── Videos/                 # Video processing components
+│   ├── Assets.xcassets/        # Images, icons, colors
+│   ├── Fonts/                  # Custom fonts
+│   ├── Info.plist              # App metadata and configuration
+│   └── Dayflow.entitlements    # macOS permissions and capabilities
+├── DayflowTests/               # Unit tests
+├── DayflowUITests/             # UI tests
+├── Dayflow.xcodeproj/          # Xcode project configuration
+├── docs/                       # Documentation assets
+│   └── images/                 # Screenshots, diagrams, marketing materials
+└── scripts/                    # Release automation and build tools
+```
+
+## Dayflow/ - Main App Sources
+
+The main application code is organized into logical modules:
+
+### App/ - Application Lifecycle
+
+**Location**: `Dayflow/App/`
+
+Manages app initialization, state, and deep linking.
+
+| File | Purpose | Key Types |
+|------|---------|----------|
+| `DayflowApp.swift` | SwiftUI app entry point | `@main DayflowApp` |
+| `AppState.swift` | Global app state (recording on/off) | `AppState` (singleton) |
+| `AppDelegate.swift` | AppKit app delegate for lifecycle hooks | `AppDelegate` |
+| `MainWindowContent.swift` | Root window content view | `MainWindowContent` |
+| `AppDeepLinkRouter.swift` | URL scheme handler (`dayflow://`) | `AppDeepLinkRouter` |
+| `InactivityMonitor.swift` | Detects user inactivity periods | `InactivityMonitor` |
+| `PauseManager.swift` | Manages recording pause states | `PauseManager` |
+
+**Key Concepts**:
+
+- **AppState**: Observable singleton that publishes `isRecording` state. All components observe this to sync recording state.
+- **Deep Linking**: Supports `dayflow://start-recording` and `dayflow://stop-recording` for automation.
+- **Lifecycle**: AppDelegate handles Sparkle updates, initial permissions, and window management.
+
+### Core/ - Business Logic Services
+
+**Location**: `Dayflow/Core/`
+
+Contains the core services that power Dayflow's functionality:
+
+#### Core/AI/ - AI Processing
+
+Manages LLM providers and AI processing pipeline.
+
+| File | Purpose | Key Types |
+|------|---------|----------|
+| `LLMService.swift:32` | Main LLM orchestration service | `LLMService`, `LLMServicing` |
+| `LLMTypes.swift` | Shared types for LLM system | `BatchingConfig`, `LLMProviderType` |
+| `GeminiDirectProvider.swift:8` | Gemini API provider | `GeminiDirectProvider` |
+| `GeminiPromptPreferences.swift` | Gemini prompt configuration | `GeminiPromptPreferences` |
+| `GeminiModelPreference.swift` | Gemini model selection | `GeminiModelPreference`, `GeminiModel` |
+| `GemmaBackupProvider.swift` | Gemma 2 fallback provider | `GemmaBackupProvider` |
+| `OllamaProvider.swift` | Ollama local model provider | `OllamaProvider` |
+| `OllamaPromptPreferences.swift` | Ollama prompt configuration | `OllamaPromptPreferences` |
+| `ChatCLIProvider.swift` | ChatGPT/Claude CLI provider | `ChatCLIProvider`, `ChatCLITool` |
+| `ChatCLIRunner.swift` | CLI execution wrapper | `ChatCLIRunner` |
+| `ChatCLIPromptPreferences.swift` | CLI prompt configuration | `ChatCLIPromptPreferences` |
+| `ChatService.swift` | Chat interface for Dashboard | `ChatService` |
+| `ChatToolExecutor.swift` | Tool execution for chat | `ChatToolExecutor` |
+| `DayflowBackendProvider.swift` | Dayflow cloud backend provider | `DayflowBackendProvider` |
+| `LocalEngine.swift` | Local model engine abstraction | `LocalEngine` |
+| `LocalModelPreset.swift` | Local model presets | `LocalModelPreset` |
+| `LocalEndpointUtilities.swift` | Local endpoint helpers | - |
+| `LLMLogger.swift` | LLM request/response logging | `LLMLogger` |
+| `LLMOutputLanguagePreferences.swift` | Output language settings | `LLMOutputLanguagePreferences` |
+| `DailyRecapScheduler.swift` | Scheduled recap generation | `DailyRecapScheduler` |
+
+**Key Concepts**:
+
+- **Provider Pattern**: All AI providers implement common interfaces for transcription and card generation.
+- **Fallback System**: Gemini automatically falls back to Gemma 2 on capacity errors; system-wide backup provider support.
+- **Sliding Window**: Card generation uses observations from previous batches for context continuity.
+
+#### Core/Recording/ - Screen Capture
+
+Handles screen recording and storage management.
+
+| File | Purpose | Key Types |
+|------|---------|----------|
+| `ScreenRecorder.swift:82` | Screenshot capture engine | `ScreenRecorder` |
+| `StorageManager.swift:432` | Database and file management | `StorageManager`, `StorageManaging` |
+| `StoragePreferences.swift` | Storage settings | `StoragePreferences` |
+| `JournalDayManager.swift` | Journal day boundaries | `JournalDayManager` |
+| `ActiveDisplayTracker.swift` | Multi-display tracking | `ActiveDisplayTracker` |
+| `TimelapseStorageManager.swift` | Timelapse file management | `TimelapseStorageManager` |
+| `VideoProcessingService.swift` | Timelapse generation | `VideoProcessingService` |
+
+**Key Concepts**:
+
+- **Screenshot-Based**: Captures at 10s intervals (configurable) instead of continuous video for battery efficiency.
+- **GRDB**: Uses SQLite with Write-Ahead Logging for safe concurrent access.
+- **4AM Boundary**: Days start at 4 AM to align with natural sleep patterns.
+
+#### Core/Analysis/ - Batch Processing
+
+Orchestrates the analysis pipeline.
+
+| File | Purpose | Key Types |
+|------|---------|----------|
+| `AnalysisManager.swift:25` | Batch orchestration | `AnalysisManager`, `AnalysisManaging` |
+| `TimeParsing.swift` | Time string parsing utilities | - |
+
+**Key Concepts**:
+
+- **Batching Strategy**: Groups screenshots by time gaps (max 5 min) and duration (15-30 min).
+- **Reprocessing**: Supports day-level and batch-level retry for error recovery.
+
+#### Core/Notifications/ - User Notifications
+
+Manages system notifications and badges.
+
+| File | Purpose | Key Types |
+|------|---------|----------|
+| `NotificationService.swift` | macOS notification delivery | `NotificationService` |
+| `NotificationPreferences.swift` | Notification settings | `NotificationPreferences` |
+| `NotificationBadgeManager.swift` | Menu bar badge management | `NotificationBadgeManager` |
+
+#### Core/Security/ - Secure Storage
+
+Handles sensitive data.
+
+| File | Purpose | Key Types |
+|------|---------|----------|
+| `KeychainManager.swift` | API key storage | `KeychainManager` |
+
+#### Core/Net/ - Networking
+
+Network-related services.
+
+| File | Purpose | Key Types |
+|------|---------|----------|
+| `FaviconService.swift` | Favicon fetching and caching | `FaviconService` |
+
+#### Core/Thumbnails/ - Image Caching
+
+Screenshot thumbnail management.
+
+| File | Purpose | Key Types |
+|------|---------|----------|
+| `ThumbnailCache.swift` | Generic thumbnail cache | `ThumbnailCache` |
+| `ScreenshotThumbnailCache.swift` | Screenshot-specific cache | `ScreenshotThumbnailCache` |
+
+### Models/ - Data Types
+
+**Location**: `Dayflow/Models/`
+
+Defines core data structures used throughout the app.
+
+| File | Purpose | Key Types |
+|------|---------|----------|
+| `AnalysisModels.swift` | Analysis pipeline types | `RecordingChunk`, `Screenshot`, `ActivityCardData`, `AppSites` |
+| `ChatMessage.swift` | Chat interface types | `ChatMessage`, `ChatRole` |
+| `TimelineCategory.swift` | Category system | `TimelineCategory`, `CategoryStore`, `LLMCategoryDescriptor` |
+
+**Storage Models** (defined in StorageManager.swift):
+
+- `TimelineCard`: Activity card with metadata
+- `Observation`: AI-generated transcript of screenshots
+- `JournalEntry`: Daily intentions and reflections
+- `LLMCall`: Logged LLM request/response
+- `Distraction`: Distraction event within a card
+
+### Views/ - User Interface
+
+**Location**: `Dayflow/Views/`
+
+SwiftUI views organized by feature area.
+
+```
+Views/
+├── Components/          # Reusable UI components
+├── Onboarding/          # First-run experience
+└── UI/                  # Main app views
+    ├── Timeline/        # Timeline view components
+    ├── Settings/        # Settings panels
+    ├── Journal/         # Daily journal (Beta)
+    └── Dashboard/       # Dashboard (Beta)
+```
+
+**Component Examples**:
+
+- `TimelineView.swift`: Main timeline display
+- `TimelineCardView.swift`: Individual activity card
+- `SettingsView.swift`: Settings window
+- `OnboardingFlow.swift`: Setup wizard
+
+### Menu/ - Menu Bar Interface
+
+**Location**: `Dayflow/Menu/`
+
+| File | Purpose |
+|------|----------|
+| `StatusMenuView.swift` | Menu bar dropdown UI |
+
+### System/ - System Integrations
+
+**Location**: `Dayflow/System/`
+
+Integrations with macOS system services.
+
+| File | Purpose | Key Types |
+|------|---------|----------|
+| `AnalyticsService.swift` | PostHog analytics | `AnalyticsService` |
+| `LaunchAtLoginManager.swift` | Login item management | `LaunchAtLoginManager` |
+| `MainWindowManager.swift` | Window lifecycle | `MainWindowManager` |
+
+### Utilities/ - Helpers
+
+**Location**: `Dayflow/Utilities/`
+
+Extensions and utility functions.
+
+- Date extensions
+- String utilities
+- SwiftUI helpers
+- Color extensions
+
+### Videos/ - Video Processing
+
+**Location**: `Dayflow/Videos/`
+
+Timelapse generation from screenshots.
+
+## Configuration Files
+
+### Info.plist
+
+**Location**: `Dayflow/Info.plist`
+
+App metadata:
+- Bundle identifier: `com.jerryliudev.Dayflow`
+- Minimum macOS version: 13.0
+- Required permissions: Screen Recording
+- URL schemes: `dayflow://`
+- Sparkle update feed
+
+### Dayflow.entitlements
+
+**Location**: `Dayflow/Dayflow.entitlements`
+
+macOS capabilities:
+- Screen Recording
+- App Sandbox (when signed)
+- Network client (for AI APIs)
+- File system access (recordings folder)
+
+## External Directories
+
+### docs/ - Documentation Assets
+
+**Location**: `docs/`
+
+Marketing materials and screenshots:
+- `images/`: Hero images, screenshots, diagrams
+- Appcast XML for Sparkle updates
+
+### scripts/ - Build Automation
+
+**Location**: `scripts/`
+
+Release automation:
+- DMG creation
+- Code signing
+- Notarization
+- Sparkle appcast generation
+- One-button release workflow
+
+## Build Outputs
+
+Build artifacts are stored outside the source tree:
+
+- **App Bundle**: `DerivedData/Build/Products/Release/Dayflow.app`
+- **User Data**: `~/Library/Application Support/Dayflow/`
+  - `recordings/`: Screenshot files (`.jpg`)
+  - `chunks.sqlite`: Main database
+  - `backups/`: Automatic database backups
+
+## Database Schema
+
+See [StorageManager.swift:638](source://Dayflow/Core/Recording/StorageManager.swift:638) for the complete schema.
+
+**Key Tables**:
+
+- `screenshots`: Captured images with timestamps
+- `analysis_batches`: Processing batches
+- `batch_screenshots`: Many-to-many junction table
+- `observations`: AI transcriptions
+- `timeline_cards`: Final activity cards
+- `llm_calls`: Request/response logs
+- `journal_entries`: Daily journal (Beta)
+- `timeline_review_ratings`: User ratings
+
+## Dependency Management
+
+Dayflow uses **Xcode frameworks** linked directly in the project:
+
+- **GRDB**: Linked via Swift Package Manager or manual framework
+- **Sparkle**: Binary framework for auto-updates
+- **PostHog**: Analytics SDK
+- **Sentry**: Error tracking SDK
+
+No CocoaPods or Carthage dependencies.
+
+## Testing Structure
+
+### DayflowTests/
+
+Unit tests for business logic:
+- Storage layer tests
+- Date boundary tests
+- Model validation tests
+
+### DayflowUITests/
+
+UI integration tests:
+- Onboarding flow
+- Timeline interactions
+- Settings panels
+
+## Code Organization Patterns
+
+### Protocols for Testability
+
+Key services define protocols for dependency injection:
+
+```swift
+protocol StorageManaging: Sendable { /* ... */ }
+protocol LLMServicing { /* ... */ }
+protocol AnalysisManaging { /* ... */ }
+```
+
+### Singleton Pattern
+
+Core services use thread-safe singletons:
+
+```swift
+static let shared = LLMService()
+static let shared = StorageManager()
+static let shared = AnalysisManager()
+```
+
+### Observable State
+
+State uses Combine publishers:
+
+```swift
+@Published var isRecording: Bool
+```
+
+### File Organization
+
+Files follow this pattern:
+1. Copyright header
+2. Imports
+3. Protocols
+4. Main types
+5. Extensions
+6. Private helpers
+
+## Naming Conventions
+
+- **Types**: PascalCase (e.g., `ScreenRecorder`, `LLMService`)
+- **Variables/Functions**: camelCase (e.g., `isRecording`, `processBatch`)
+- **Constants**: camelCase (e.g., `maxBatchDuration`)
+- **Protocols**: Noun or -ing suffix (e.g., `StorageManaging`, `Sendable`)
+- **Files**: Match primary type name (e.g., `ScreenRecorder.swift`)
+
+## Next Steps
+
+- [Architecture Overview](/development/overview) - High-level system design
+- [AI Pipeline](/development/ai-pipeline) - AI processing stages
