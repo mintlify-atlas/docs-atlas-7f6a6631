@@ -35,6 +35,7 @@
             "group": "Core Features",
             "pages": [
               "features/timeline",
+              "features/daily",
               "features/ai-providers",
               "features/journal",
               "features/timelapse",
